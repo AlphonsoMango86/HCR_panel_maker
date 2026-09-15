@@ -5,86 +5,34 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>HCR Panel Planner</title>
 <style>
-:root{ color-scheme: light dark; }
 [hidden]{ display:none !important; }
 img{ max-width:100%; }
+/* Committed dark HUD theme — modeled on a sci-fi ops-console palette
+   (teal-charcoal hull, cyan readouts, amber secondary console, hazard
+   stripes for empty/inactive slots). Deliberate single-theme design. */
 :root{
-  --bg:#f1f5f2;
-  --surface:#ffffff;
-  --surface-2:#e8eeea;
-  --border:#d3ddd6;
-  --text:#152019;
-  --text-dim:#55645b;
-  --accent:#0e7c72;
-  --accent-soft:#d9f0ec;
-  --accent-text:#08514a;
-  --warn-bg:#fdf3d8;
-  --warn-text:#7a5a05;
-  --warn-border:#e8c766;
-  --danger-bg:#fbe4e1;
-  --danger-text:#8a2318;
-  --danger-border:#e2a89f;
-  --good-bg:#e2f2e4;
-  --good-text:#276630;
-  --good-border:#a9d6ad;
-  --dye-488:#2f9e44;
-  --dye-546:#c99416;
-  --dye-594:#d5622e;
-  --dye-647:#c22a3e;
-  --dye-750:#5b1a2e;
-  --dye-750-ink:#f2d9e0;
-  --dye-ref:#3457d5;
-  --shadow: 0 1px 2px rgba(20,30,25,0.06), 0 8px 24px -12px rgba(20,30,25,0.18);
-}
-@media (prefers-color-scheme: dark){
-  :root:not([data-theme="light"]){
-    --bg:#10221d;
-    --surface:#15281f;
-    --surface-2:#1b3126;
-    --border:#2c4438;
-    --text:#e9f2ec;
-    --text-dim:#a3b8ae;
-    --accent:#3fc9b8;
-    --accent-soft:#1b3c37;
-    --accent-text:#8fe6da;
-    --warn-bg:#3a2f10;
-    --warn-text:#f0cf6a;
-    --warn-border:#6b551c;
-    --danger-bg:#3a1815;
-    --danger-text:#f4a99c;
-    --danger-border:#6e2c24;
-    --good-bg:#163823;
-    --good-text:#8fd89a;
-    --good-border:#2c5c3a;
-    --dye-488:#4fce6a;
-    --dye-546:#e0b23c;
-    --dye-594:#ec8451;
-    --dye-647:#ea5468;
-    --dye-750:#a4506c;
-    --dye-750-ink:#2a0f18;
-    --dye-ref:#7d95ff;
-    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5);
-  }
-}
-:root[data-theme="dark"]{
-  --bg:#10221d;
-  --surface:#15281f;
-  --surface-2:#1b3126;
-  --border:#2c4438;
-  --text:#e9f2ec;
-  --text-dim:#a3b8ae;
-  --accent:#3fc9b8;
-  --accent-soft:#1b3c37;
-  --accent-text:#8fe6da;
-  --warn-bg:#3a2f10;
-  --warn-text:#f0cf6a;
-  --warn-border:#6b551c;
-  --danger-bg:#3a1815;
-  --danger-text:#f4a99c;
-  --danger-border:#6e2c24;
-  --good-bg:#163823;
-  --good-text:#8fd89a;
-  --good-border:#2c5c3a;
+  color-scheme: dark;
+  --bg:#141d1f;
+  --surface:#223235;
+  --surface-2:#2b3f42;
+  --border:#3d5457;
+  --text:#dceeec;
+  --text-dim:#84a3a2;
+  --accent:#5ed3e3;
+  --accent-soft:#1c3639;
+  --accent-text:#8fe6f0;
+  --accent2:#d9a94e;
+  --accent2-soft:#3a2f18;
+  --accent2-text:#f0c274;
+  --warn-bg:#3a2d14;
+  --warn-text:#e0ac4c;
+  --warn-border:#6b5327;
+  --danger-bg:#3a2019;
+  --danger-text:#e2795f;
+  --danger-border:#6c3a2a;
+  --good-bg:#1a3730;
+  --good-text:#6bc99e;
+  --good-border:#2e5c4b;
   --dye-488:#4fce6a;
   --dye-546:#e0b23c;
   --dye-594:#ec8451;
@@ -92,7 +40,8 @@ img{ max-width:100%; }
   --dye-750:#a4506c;
   --dye-750-ink:#2a0f18;
   --dye-ref:#7d95ff;
-  --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5);
+  --shadow: 0 1px 0 rgba(0,0,0,0.4), 0 8px 20px -12px rgba(0,0,0,0.6);
+  --stripe: repeating-linear-gradient(135deg, transparent 0 5px, rgba(132,163,162,0.16) 5px 6px);
 }
 
 *{box-sizing:border-box;}
@@ -113,29 +62,34 @@ body{
   flex-direction:column;
   gap:32px;
 }
-h1,h2{ text-wrap:balance; font-family:"IBM Plex Sans", sans-serif; margin:0; }
+h1,h2,h3{ text-wrap:balance; font-family:"Chakra Petch", "IBM Plex Sans", sans-serif; margin:0; text-transform:uppercase; }
 .hero{ display:flex; flex-direction:column; gap:10px; max-width:640px; }
 .eyebrow{
-  margin:0; font-size:12.5px; font-weight:600; letter-spacing:.09em; text-transform:uppercase;
-  color:var(--accent-text);
+  margin:0; font-size:12.5px; font-weight:600; letter-spacing:.16em; text-transform:uppercase;
+  color:var(--accent-text); font-family:"Chakra Petch", sans-serif;
 }
-.hero h1{ font-size:clamp(28px,4vw,38px); font-weight:700; letter-spacing:-0.01em; }
+.hero h1{ font-size:clamp(26px,4vw,34px); font-weight:700; letter-spacing:.02em; }
 .lede{ margin:0; color:var(--text-dim); font-size:15px; line-height:1.55; max-width:60ch; }
 
 .panel{
   background:var(--surface);
   border:1px solid var(--border);
-  border-radius:14px;
+  border-radius:3px;
   padding:22px 22px 24px;
   box-shadow:var(--shadow);
   display:flex;
   flex-direction:column;
   gap:14px;
+  position:relative;
+}
+.panel::before{
+  content:""; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--accent);
+  opacity:.55;
 }
 .panel-head{
   display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
 }
-.panel-head h2{ font-size:17px; font-weight:600; }
+.panel-head h2{ font-size:16px; font-weight:600; letter-spacing:.06em; color:var(--accent-text); }
 .panel-actions{ display:flex; gap:8px; flex-wrap:wrap; }
 .hint{ margin:-6px 0 0; font-size:13px; color:var(--text-dim); line-height:1.5; }
 
@@ -144,38 +98,38 @@ h1,h2{ text-wrap:balance; font-family:"IBM Plex Sans", sans-serif; margin:0; }
 .check input[type="checkbox"]{ width:16px; height:16px; accent-color:var(--accent); cursor:pointer; }
 
 .btn{
-  font-family:inherit; font-size:13px; font-weight:600; cursor:pointer;
-  border-radius:8px; padding:7px 12px; border:1px solid var(--border);
+  font-family:"Chakra Petch", inherit; font-size:12.5px; font-weight:600; letter-spacing:.04em; text-transform:uppercase;
+  cursor:pointer; border-radius:3px; padding:7px 12px; border:1px solid var(--border);
   background:var(--surface-2); color:var(--text); transition:filter .12s ease;
 }
-.btn:hover{ filter:brightness(0.96); }
-:root:not([data-theme="light"]) .btn:hover, :root[data-theme="dark"] .btn:hover{ filter:brightness(1.15); }
+.btn:hover{ filter:brightness(1.15); }
 .btn:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
 .btn-ghost{ background:transparent; }
 .btn-add{ align-self:flex-start; background:var(--accent-soft); color:var(--accent-text); border-color:transparent; }
 .danger-ghost{ color:var(--danger-text); }
+.btn-primary{ background:var(--accent2-soft); color:var(--accent2-text); border-color:var(--accent2); }
 
 .paste-box{ display:flex; flex-direction:column; gap:8px; }
 .paste-box textarea{
-  font-family:"IBM Plex Mono", monospace; font-size:13px; border:1px solid var(--border); border-radius:8px;
+  font-family:"IBM Plex Mono", monospace; font-size:13px; border:1px solid var(--border); border-radius:3px;
   background:var(--surface); color:var(--text); padding:10px 12px; resize:vertical; min-height:72px; width:100%;
 }
 .paste-box textarea:focus{ outline:none; border-color:var(--accent); }
 .paste-actions{ display:flex; gap:8px; }
 
-.table-scroll{ overflow-x:auto; border:1px solid var(--border); border-radius:10px; }
+.table-scroll{ overflow-x:auto; border:1px solid var(--border); border-radius:3px; }
 table{ border-collapse:collapse; width:100%; min-width:680px; font-size:13.5px; }
 thead th{
-  text-align:left; font-size:11px; font-weight:600; letter-spacing:.06em; text-transform:uppercase;
-  color:var(--text-dim); background:var(--surface-2); padding:9px 10px; border-bottom:1px solid var(--border);
-  position:sticky; top:0;
+  text-align:left; font-size:11px; font-weight:600; letter-spacing:.08em; text-transform:uppercase;
+  color:var(--accent-text); background:var(--surface-2); padding:9px 10px; border-bottom:1px solid var(--border);
+  position:sticky; top:0; font-family:"Chakra Petch", sans-serif;
 }
 tbody td{ padding:7px 10px; border-bottom:1px solid var(--border); vertical-align:middle; }
 tbody tr:last-child td{ border-bottom:none; }
 tbody input[type="text"]{
   font-family:inherit; font-size:13.5px; font-style:italic; font-weight:500;
   border:1px solid transparent; background:transparent; color:var(--text);
-  border-radius:6px; padding:5px 6px; width:100%; min-width:90px;
+  border-radius:3px; padding:5px 6px; width:100%; min-width:90px;
 }
 tbody input[type="text"].klass-input{ font-style:normal; font-weight:400; }
 tbody input[type="text"]:hover, tbody select:hover{ border-color:var(--border); }
@@ -186,11 +140,11 @@ tbody input[type="text"]:focus, tbody select:focus{
 .abund-cell input[type="range"]{ width:76px; accent-color:var(--accent); }
 .abund-tag{
   font-family:"IBM Plex Mono", monospace; font-size:11px; font-weight:600; letter-spacing:.02em;
-  padding:2px 7px; border-radius:999px; white-space:nowrap; font-variant-numeric:tabular-nums;
+  padding:2px 7px; border-radius:3px; white-space:nowrap; font-variant-numeric:tabular-nums;
 }
 .abund-src{
   font-family:"IBM Plex Mono", monospace; font-size:10px; color:var(--text-dim); background:var(--surface-2);
-  padding:1px 6px; border-radius:6px; white-space:nowrap; font-variant-numeric:tabular-nums; cursor:help;
+  padding:1px 6px; border-radius:3px; white-space:nowrap; font-variant-numeric:tabular-nums; cursor:help;
 }
 .abund-src.est{ border:1px dashed var(--border); background:transparent; }
 .abund-link{
@@ -202,36 +156,42 @@ tbody input[type="text"]:focus, tbody select:focus{
 .tier-3,.tier-4{ background:var(--accent-soft); color:var(--accent-text); }
 .tier-5{ background:var(--good-bg); color:var(--good-text); }
 select{
-  font-family:inherit; font-size:13px; border:1px solid var(--border); border-radius:6px;
+  font-family:inherit; font-size:13px; border:1px solid var(--border); border-radius:3px;
   background:var(--surface); color:var(--text); padding:5px 6px;
 }
 input[type="number"]{
   font-family:"IBM Plex Mono", monospace; font-size:13px; width:48px; text-align:center;
-  border:1px solid var(--border); border-radius:6px; background:var(--surface); color:var(--text);
+  border:1px solid var(--border); border-radius:3px; background:var(--surface); color:var(--text);
   padding:5px 4px;
 }
 .row-remove{
   border:none; background:transparent; color:var(--text-dim); cursor:pointer; font-size:15px;
-  width:26px; height:26px; border-radius:6px;
+  width:26px; height:26px; border-radius:3px;
 }
 .row-remove:hover{ background:var(--danger-bg); color:var(--danger-text); }
 
 #roundsWrap{ display:flex; flex-direction:column; gap:16px; }
+.empty-plan{
+  background:var(--stripe) var(--surface-2); border:1px dashed var(--border); border-radius:3px;
+  padding:16px; text-align:center; font-family:"Chakra Petch",sans-serif; letter-spacing:.08em;
+  font-size:12px; color:var(--text-dim); margin:0;
+}
 .round-card{
-  border:1px solid var(--border); border-radius:12px; padding:14px 16px; background:var(--surface-2);
+  border:1px solid var(--border); border-radius:3px; padding:14px 16px; background:var(--surface-2);
   display:flex; flex-direction:column; gap:10px;
 }
 .round-card.overflow{ border-color:var(--danger-border); }
 .round-title{ display:flex; align-items:baseline; gap:8px; }
-.round-title h3{ margin:0; font-size:14px; font-weight:700; letter-spacing:.02em; }
-.round-title span{ font-size:12px; color:var(--text-dim); }
+.round-title h3{ margin:0; font-size:14px; font-weight:700; letter-spacing:.06em; color:var(--accent-text); }
+.round-title span{ font-size:12px; color:var(--text-dim); font-family:"IBM Plex Mono",monospace; }
 .round-note{ margin:-2px 0 0; font-size:12px; color:var(--warn-text); }
 .chip-row{ display:flex; flex-wrap:wrap; gap:8px; }
 .chip{
-  display:flex; align-items:center; gap:8px; border-radius:10px; padding:7px 11px 7px 9px;
+  display:flex; align-items:center; gap:8px; border-radius:3px; padding:7px 11px 7px 9px;
   border:1px solid var(--border); background:var(--surface); min-width:0;
 }
-.chip .swatch{ width:13px; height:13px; border-radius:4px; flex:none; box-shadow:inset 0 0 0 1px rgba(0,0,0,0.15); }
+.chip .swatch{ width:13px; height:13px; border-radius:2px; flex:none; box-shadow:inset 0 0 0 1px rgba(0,0,0,0.35); }
+.chip .swatch.empty{ background:var(--stripe) var(--surface-2); border:1px dashed var(--border); }
 .chip .meta{ display:flex; flex-direction:column; line-height:1.25; min-width:0; }
 .chip .g{ font-style:italic; font-weight:600; font-size:13.5px; }
 .chip .k{ font-size:11px; color:var(--text-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:150px; }
@@ -239,10 +199,10 @@ input[type="number"]{
 .chip.ref{ background:var(--surface); }
 .chip.ref .swatch{ background:var(--dye-ref); }
 
-#warnSection h2{ font-size:16px; font-weight:600; margin-bottom:2px; }
+#warnSection h2{ font-size:16px; font-weight:600; margin-bottom:2px; letter-spacing:.06em; color:var(--accent-text); }
 #warnList{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:8px; }
 #warnList li{
-  border-radius:9px; padding:9px 12px; font-size:13px; line-height:1.5; border:1px solid;
+  border-radius:3px; padding:9px 12px; font-size:13px; line-height:1.5; border:1px solid;
 }
 #warnList li.warn{ background:var(--warn-bg); color:var(--warn-text); border-color:var(--warn-border); }
 #warnList li.danger{ background:var(--danger-bg); color:var(--danger-text); border-color:var(--danger-border); }
@@ -257,7 +217,7 @@ input[type="number"]{
   table{ min-width:600px; }
 }
 </style>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,500;1,600&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,500;1,600&family=IBM+Plex+Mono:wght@500;600&display=swap">
 </head>
 <body>
 <div class="page">
@@ -283,7 +243,7 @@ input[type="number"]{
     <div class="panel-head">
       <h2>Probe list</h2>
       <div class="panel-actions">
-        <button class="btn" id="pasteListBtn" type="button">Paste gene list</button>
+        <button class="btn btn-primary" id="pasteListBtn" type="button">Paste gene list</button>
         <button class="btn btn-ghost" id="loadExampleBtn" type="button">Load example panel</button>
         <button class="btn btn-ghost" id="autoRoundBtn" type="button" title="Sorts your full list by abundance and fills rounds weakest-first, so your strongest transcripts land in the later rounds">Auto-arrange rounds (weakest first)</button>
         <button class="btn btn-ghost danger-ghost" id="clearBtn" type="button">Clear all</button>
@@ -293,7 +253,7 @@ input[type="number"]{
     <div id="pasteBox" class="paste-box" hidden>
       <textarea id="pasteArea" rows="4" placeholder="Paste gene symbols — one per line, or comma-separated"></textarea>
       <div class="paste-actions">
-        <button class="btn" id="pasteAddBtn" type="button">Add &amp; auto-arrange rounds</button>
+        <button class="btn btn-primary" id="pasteAddBtn" type="button">Add &amp; auto-arrange rounds</button>
         <button class="btn btn-ghost" id="pasteCancelBtn" type="button">Cancel</button>
       </div>
     </div>
@@ -757,7 +717,7 @@ input[type="number"]{
     var roundNums = Object.keys(map).map(Number).sort(function(a,b){return a-b;});
 
     if(roundNums.length === 0){
-      wrap.appendChild(el("p", { class:"hint", text:"Add a transcript above to see the round plan." }));
+      wrap.appendChild(el("p", { class:"hint empty-plan", text:"NO TARGETS QUEUED — add a transcript above" }));
     }
 
     roundNums.forEach(function(r){
@@ -786,7 +746,7 @@ input[type="number"]{
       row.appendChild(refChip);
 
       genes.forEach(function(g){
-        var swatch = el("div", { class:"swatch" });
+        var swatch = el("div", { class:"swatch" + (g._dye ? "" : " empty") });
         if(g._dye){
           swatch.style.background = "var(" + DYE_VAR[g._dye] + ")";
           if(g._dye === "750"){ swatch.style.backgroundImage = "repeating-linear-gradient(135deg, transparent 0 2px, rgba(255,255,255,.28) 2px 3px)"; }

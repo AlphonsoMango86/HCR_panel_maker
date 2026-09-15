@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HCR Panel Planner</title>
+<style>
+:root{ color-scheme: light dark; }
+[hidden]{ display:none !important; }
+img{ max-width:100%; }
+:root{
+  --bg:#f1f5f2;
+  --surface:#ffffff;
+  --surface-2:#e8eeea;
+  --border:#d3ddd6;
+  --text:#152019;
+  --text-dim:#55645b;
+  --accent:#0e7c72;
+  --accent-soft:#d9f0ec;
+  --accent-text:#08514a;
+  --warn-bg:#fdf3d8;
+  --warn-text:#7a5a05;
+  --warn-border:#e8c766;
+  --danger-bg:#fbe4e1;
+  --danger-text:#8a2318;
+  --danger-border:#e2a89f;
+  --good-bg:#e2f2e4;
+  --good-text:#276630;
+  --good-border:#a9d6ad;
+  --dye-488:#2f9e44;
+  --dye-546:#c99416;
+  --dye-594:#d5622e;
+  --dye-647:#c22a3e;
+  --dye-750:#5b1a2e;
+  --dye-750-ink:#f2d9e0;
+  --dye-ref:#3457d5;
+  --shadow: 0 1px 2px rgba(20,30,25,0.06), 0 8px 24px -12px rgba(20,30,25,0.18);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#10221d;
+    --surface:#15281f;
+    --surface-2:#1b3126;
+    --border:#2c4438;
+    --text:#e9f2ec;
+    --text-dim:#a3b8ae;
+    --accent:#3fc9b8;
+    --accent-soft:#1b3c37;
+    --accent-text:#8fe6da;
+    --warn-bg:#3a2f10;
+    --warn-text:#f0cf6a;
+    --warn-border:#6b551c;
+    --danger-bg:#3a1815;
+    --danger-text:#f4a99c;
+    --danger-border:#6e2c24;
+    --good-bg:#163823;
+    --good-text:#8fd89a;
+    --good-border:#2c5c3a;
+    --dye-488:#4fce6a;
+    --dye-546:#e0b23c;
+    --dye-594:#ec8451;
+    --dye-647:#ea5468;
+    --dye-750:#a4506c;
+    --dye-750-ink:#2a0f18;
+    --dye-ref:#7d95ff;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#10221d;
+  --surface:#15281f;
+  --surface-2:#1b3126;
+  --border:#2c4438;
+  --text:#e9f2ec;
+  --text-dim:#a3b8ae;
+  --accent:#3fc9b8;
+  --accent-soft:#1b3c37;
+  --accent-text:#8fe6da;
+  --warn-bg:#3a2f10;
+  --warn-text:#f0cf6a;
+  --warn-border:#6b551c;
+  --danger-bg:#3a1815;
+  --danger-text:#f4a99c;
+  --danger-border:#6e2c24;
+  --good-bg:#163823;
+  --good-text:#8fd89a;
+  --good-border:#2c5c3a;
+  --dye-488:#4fce6a;
+  --dye-546:#e0b23c;
+  --dye-594:#ec8451;
+  --dye-647:#ea5468;
+  --dye-750:#a4506c;
+  --dye-750-ink:#2a0f18;
+  --dye-ref:#7d95ff;
+  --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5);
+}
+
+*{box-sizing:border-box;}
+html,body{ background:var(--bg); }
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+.page{
+  max-width:980px;
+  margin:0 auto;
+  padding-inline:20px;
+  padding-block:40px 64px;
+  display:flex;
+  flex-direction:column;
+  gap:32px;
+}
+h1,h2{ text-wrap:balance; font-family:"IBM Plex Sans", sans-serif; margin:0; }
+.hero{ display:flex; flex-direction:column; gap:10px; max-width:640px; }
+.eyebrow{
+  margin:0; font-size:12.5px; font-weight:600; letter-spacing:.09em; text-transform:uppercase;
+  color:var(--accent-text);
+}
+.hero h1{ font-size:clamp(28px,4vw,38px); font-weight:700; letter-spacing:-0.01em; }
+.lede{ margin:0; color:var(--text-dim); font-size:15px; line-height:1.55; max-width:60ch; }
+
+.panel{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:22px 22px 24px;
+  box-shadow:var(--shadow);
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+}
+.panel-head{
+  display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+}
+.panel-head h2{ font-size:17px; font-weight:600; }
+.panel-actions{ display:flex; gap:8px; flex-wrap:wrap; }
+.hint{ margin:-6px 0 0; font-size:13px; color:var(--text-dim); line-height:1.5; }
+
+.settings-row{ display:flex; gap:22px; flex-wrap:wrap; }
+.check{ display:flex; align-items:center; gap:7px; font-size:13.5px; font-weight:500; cursor:pointer; }
+.check input[type="checkbox"]{ width:16px; height:16px; accent-color:var(--accent); cursor:pointer; }
+
+.btn{
+  font-family:inherit; font-size:13px; font-weight:600; cursor:pointer;
+  border-radius:8px; padding:7px 12px; border:1px solid var(--border);
+  background:var(--surface-2); color:var(--text); transition:filter .12s ease;
+}
+.btn:hover{ filter:brightness(0.96); }
+:root:not([data-theme="light"]) .btn:hover, :root[data-theme="dark"] .btn:hover{ filter:brightness(1.15); }
+.btn:focus-visible{ outline:2px solid var(--accent); outline-offset:2px; }
+.btn-ghost{ background:transparent; }
+.btn-add{ align-self:flex-start; background:var(--accent-soft); color:var(--accent-text); border-color:transparent; }
+.danger-ghost{ color:var(--danger-text); }
+
+.paste-box{ display:flex; flex-direction:column; gap:8px; }
+.paste-box textarea{
+  font-family:"IBM Plex Mono", monospace; font-size:13px; border:1px solid var(--border); border-radius:8px;
+  background:var(--surface); color:var(--text); padding:10px 12px; resize:vertical; min-height:72px; width:100%;
+}
+.paste-box textarea:focus{ outline:none; border-color:var(--accent); }
+.paste-actions{ display:flex; gap:8px; }
+
+.table-scroll{ overflow-x:auto; border:1px solid var(--border); border-radius:10px; }
+table{ border-collapse:collapse; width:100%; min-width:680px; font-size:13.5px; }
+thead th{
+  text-align:left; font-size:11px; font-weight:600; letter-spacing:.06em; text-transform:uppercase;
+  color:var(--text-dim); background:var(--surface-2); padding:9px 10px; border-bottom:1px solid var(--border);
+  position:sticky; top:0;
+}
+tbody td{ padding:7px 10px; border-bottom:1px solid var(--border); vertical-align:middle; }
+tbody tr:last-child td{ border-bottom:none; }
+tbody input[type="text"]{
+  font-family:inherit; font-size:13.5px; font-style:italic; font-weight:500;
+  border:1px solid transparent; background:transparent; color:var(--text);
+  border-radius:6px; padding:5px 6px; width:100%; min-width:90px;
+}
+tbody input[type="text"].klass-input{ font-style:normal; font-weight:400; }
+tbody input[type="text"]:hover, tbody select:hover{ border-color:var(--border); }
+tbody input[type="text"]:focus, tbody select:focus{
+  outline:none; border-color:var(--accent); background:var(--surface);
+}
+.abund-cell{ display:flex; align-items:center; gap:6px; flex-wrap:wrap; min-width:190px; }
+.abund-cell input[type="range"]{ width:76px; accent-color:var(--accent); }
+.abund-tag{
+  font-family:"IBM Plex Mono", monospace; font-size:11px; font-weight:600; letter-spacing:.02em;
+  padding:2px 7px; border-radius:999px; white-space:nowrap; font-variant-numeric:tabular-nums;
+}
+.abund-src{
+  font-family:"IBM Plex Mono", monospace; font-size:10px; color:var(--text-dim); background:var(--surface-2);
+  padding:1px 6px; border-radius:6px; white-space:nowrap; font-variant-numeric:tabular-nums; cursor:help;
+}
+.abund-src.est{ border:1px dashed var(--border); background:transparent; }
+.abund-link{
+  font-family:inherit; font-size:10.5px; color:var(--accent-text); background:none; border:none;
+  cursor:pointer; text-decoration:underline; padding:0; white-space:nowrap;
+}
+.abund-link:hover{ opacity:.75; }
+.tier-1,.tier-2{ background:var(--surface-2); color:var(--text-dim); }
+.tier-3,.tier-4{ background:var(--accent-soft); color:var(--accent-text); }
+.tier-5{ background:var(--good-bg); color:var(--good-text); }
+select{
+  font-family:inherit; font-size:13px; border:1px solid var(--border); border-radius:6px;
+  background:var(--surface); color:var(--text); padding:5px 6px;
+}
+input[type="number"]{
+  font-family:"IBM Plex Mono", monospace; font-size:13px; width:48px; text-align:center;
+  border:1px solid var(--border); border-radius:6px; background:var(--surface); color:var(--text);
+  padding:5px 4px;
+}
+.row-remove{
+  border:none; background:transparent; color:var(--text-dim); cursor:pointer; font-size:15px;
+  width:26px; height:26px; border-radius:6px;
+}
+.row-remove:hover{ background:var(--danger-bg); color:var(--danger-text); }
+
+#roundsWrap{ display:flex; flex-direction:column; gap:16px; }
+.round-card{
+  border:1px solid var(--border); border-radius:12px; padding:14px 16px; background:var(--surface-2);
+  display:flex; flex-direction:column; gap:10px;
+}
+.round-card.overflow{ border-color:var(--danger-border); }
+.round-title{ display:flex; align-items:baseline; gap:8px; }
+.round-title h3{ margin:0; font-size:14px; font-weight:700; letter-spacing:.02em; }
+.round-title span{ font-size:12px; color:var(--text-dim); }
+.round-note{ margin:-2px 0 0; font-size:12px; color:var(--warn-text); }
+.chip-row{ display:flex; flex-wrap:wrap; gap:8px; }
+.chip{
+  display:flex; align-items:center; gap:8px; border-radius:10px; padding:7px 11px 7px 9px;
+  border:1px solid var(--border); background:var(--surface); min-width:0;
+}
+.chip .swatch{ width:13px; height:13px; border-radius:4px; flex:none; box-shadow:inset 0 0 0 1px rgba(0,0,0,0.15); }
+.chip .meta{ display:flex; flex-direction:column; line-height:1.25; min-width:0; }
+.chip .g{ font-style:italic; font-weight:600; font-size:13.5px; }
+.chip .k{ font-size:11px; color:var(--text-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:150px; }
+.chip .wl{ font-family:"IBM Plex Mono", monospace; font-size:10.5px; color:var(--text-dim); font-variant-numeric:tabular-nums; }
+.chip.ref{ background:var(--surface); }
+.chip.ref .swatch{ background:var(--dye-ref); }
+
+#warnSection h2{ font-size:16px; font-weight:600; margin-bottom:2px; }
+#warnList{ list-style:none; margin:0; padding:0; display:flex; flex-direction:column; gap:8px; }
+#warnList li{
+  border-radius:9px; padding:9px 12px; font-size:13px; line-height:1.5; border:1px solid;
+}
+#warnList li.warn{ background:var(--warn-bg); color:var(--warn-text); border-color:var(--warn-border); }
+#warnList li.danger{ background:var(--danger-bg); color:var(--danger-text); border-color:var(--danger-border); }
+
+.footnote{
+  font-size:12.5px; color:var(--text-dim); line-height:1.6; border-top:1px solid var(--border); padding-top:18px;
+}
+.footnote strong{ color:var(--text); }
+
+@media (max-width:560px){
+  .abund-cell input[type="range"]{ width:64px; }
+  table{ min-width:600px; }
+}
+</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,500;1,600&family=IBM+Plex+Mono:wght@500;600&display=swap">
+</head>
+<body>
+<div class="page">
+  <header class="hero">
+    <p class="eyebrow">HCR multiplex · mouse brain</p>
+    <h1>HCR Panel Planner</h1>
+    <p class="lede">Lay out a hybridization chain reaction panel: how many rounds it takes, and which of your 488/546/594/647/750&nbsp;nm dyes goes on which transcript. Abundance auto-fills from real per-cell transcript counts in the ABC Atlas MERFISH dataset — the 90th percentile among cells that express each gene, same thing as reading how far right its histogram tail runs — ranked relative to the rest of your list, strongest dye to the scarcest transcript.</p>
+  </header>
+
+  <section class="panel" id="settingsSection">
+    <div class="panel-head">
+      <h2>Acquisition settings</h2>
+    </div>
+    <div class="settings-row">
+      <label class="check"><input type="checkbox" id="use594Check"><span>Use 594&nbsp;nm channel</span></label>
+      <label class="check"><input type="checkbox" id="gfpCheck"><span>GFP present</span></label>
+      <label class="check"><input type="checkbox" id="rfpCheck"><span>RFP present</span></label>
+    </div>
+    <p class="hint">594 is off by default — it's a real 5th channel per round, but slows acquisition, so it's opt-in here. GFP or RFP blocks 488 and 546 in round 1 only; both return from round 2 on, once the endogenous signal is photobleached.</p>
+  </section>
+
+  <section class="panel" id="probeSection">
+    <div class="panel-head">
+      <h2>Probe list</h2>
+      <div class="panel-actions">
+        <button class="btn" id="pasteListBtn" type="button">Paste gene list</button>
+        <button class="btn btn-ghost" id="loadExampleBtn" type="button">Load example panel</button>
+        <button class="btn btn-ghost" id="autoRoundBtn" type="button" title="Sorts your full list by abundance and fills rounds weakest-first, so your strongest transcripts land in the later rounds">Auto-arrange rounds (weakest first)</button>
+        <button class="btn btn-ghost danger-ghost" id="clearBtn" type="button">Clear all</button>
+      </div>
+    </div>
+    <p class="hint">Type a gene symbol and its abundance auto-fills, rescaled 1–10 relative to whatever else is currently in your list — add or remove a row and everyone's score shifts. 28 genes have real measured MERFISH counts (solid "MERFISH p90" badge); another ~30 are only in the atlas as imputed values, so their number is estimated from Allen ISH atlas data instead (dashed "≈MERFISH" badge, marked with *). Genes outside this ~60-gene set fall back to a manual slider; click "set manually" on any row to override. The rows below are a placeholder panel to show it working — swap in your own transcripts.</p>
+    <div id="pasteBox" class="paste-box" hidden>
+      <textarea id="pasteArea" rows="4" placeholder="Paste gene symbols — one per line, or comma-separated"></textarea>
+      <div class="paste-actions">
+        <button class="btn" id="pasteAddBtn" type="button">Add &amp; auto-arrange rounds</button>
+        <button class="btn btn-ghost" id="pasteCancelBtn" type="button">Cancel</button>
+      </div>
+    </div>
+    <div class="table-scroll">
+      <table id="probeTable">
+        <thead>
+          <tr><th>Gene</th><th>Cell class / group</th><th>Abundance</th><th>Round</th><th>Dye</th><th></th></tr>
+        </thead>
+        <tbody id="probeBody"></tbody>
+      </table>
+    </div>
+    <button class="btn btn-add" id="addRowBtn" type="button">+ Add transcript</button>
+  </section>
+
+  <section class="panel" id="planSection">
+    <div class="panel-head">
+      <h2>Round plan</h2>
+      <button class="btn btn-ghost" id="copyBtn" type="button">Copy plan as text</button>
+    </div>
+    <p class="hint">Round 1 runs on the freshest tissue; each strip-and-reprobe cycle after that risks more RNA loss. So targets are sequenced weakest-abundance-first — your most robust transcripts sit in the later rounds, where they can afford it.</p>
+    <div id="roundsWrap"></div>
+  </section>
+
+  <section class="panel" id="warnSection" hidden>
+    <h2>Conflicts &amp; notes</h2>
+    <ul id="warnList"></ul>
+  </section>
+
+  <footer class="footnote">
+    <p><strong>How channels get picked:</strong> dye strength (how well a channel pulls a real signal out of background) runs 647&nbsp;&gt;&nbsp;546&nbsp;&gt;&nbsp;750&nbsp;&gt;&nbsp;594&nbsp;&gt;&nbsp;488. Within each round the most abundant transcript gets handed the weakest channel (488) and the scarcest transcript gets the strongest (647); 594 is only brought in when a round needs a fifth channel. DAPI or NeuroTrace blue rides along every round as a fixed registration reference, separate from the five gene channels. Set "Dye" to a specific value on any row to pin it manually — everything else re-balances around your pin. <strong>Rounds:</strong> filled weakest-abundance-first, so round 1 carries your scarcest transcripts on the freshest tissue and your most robust ones land in the last round, where they can better tolerate RNA loss from repeated strip-and-reprobe cycles. Turning on GFP or RFP above removes 488 and 546 from round&nbsp;1 only (both channels return from round 2 on, once the endogenous signal is photobleached) — so with either ticked, round 1 tops out at 2 targets (3 if 594 is also on). <strong>Abundance:</strong> pulled directly from the ABC Atlas MERFISH matrix (C57BL6J-638850-raw.h5ad, 4.33M cells) for the 550 genes actually measured on the MERSCOPE — the 90th percentile of transcript count among cells positive for that gene. The atlas viewer's other ~7,900 "genes" are computationally imputed rather than measured, so they have no real per-cell counts to read; for those, this number is estimated from Allen ISH whole-brain expression energy via a fit against the 28 genes that have both real MERFISH data and an ISH value (log–log fit, Pearson r=0.83, n=28) — marked with * and a dashed badge so it's never confused with a real measurement. Either way the raw value is rescaled 1–10 relative to the rest of your current list, log-scaled since transcript counts span orders of magnitude.</p>
+  </footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var WL = ["488","546","594","647","750"];
+  var DYE_LABEL = {
+    "488":"488 nm · green",
+    "546":"546 nm · gold",
+    "594":"594 nm · orange-red",
+    "647":"647 nm · red",
+    "750":"750 nm · far-red (NIR)"
+  };
+  var DYE_VAR = { "488":"--dye-488","546":"--dye-546","594":"--dye-594","647":"--dye-647","750":"--dye-750" };
+
+  // Strength order, strongest (best at pulling a signal out of background) to weakest.
+  // Most-abundant transcript in a round gets the weakest dye (488); scarcest gets the strongest (647).
+  var STRENGTH_DESC = ["647","546","750","594","488"];
+
+  // Whole-brain aggregate expression energy (Allen Mouse Brain ISH atlas, structure "grey"),
+  // averaged across available adult mouse datasets per gene. The ABC Atlas MERFISH viewer itself
+  // doesn't expose a clean per-gene number to query, so this sibling Allen dataset stands in as the
+  // real, queryable source of relative transcript abundance across the whole brain.
+  var ABC_EXPRESSION = {
+    "Slc17a7":14.3435, "Slc17a6":3.7325, "Slc17a8":0.4801, "Gad1":12.3899, "Gad2":9.6331,
+    "Pvalb":5.128, "Sst":3.8556, "Vip":0.979, "Lamp5":7.3371, "Sncg":1.8395,
+    "Calb1":6.5523, "Calb2":5.7347, "Npy":1.8752, "Cck":10.4578, "Reln":5.1865,
+    "Cux2":7.1994, "Rorb":1.1836, "Fezf2":3.4359, "Bcl11b":1.9238, "Foxp2":2.0395,
+    "Tbr1":4.3641, "Satb2":3.3755, "Neurod6":1.4205,
+    "Mbp":18.3396, "Mobp":5.6424, "Plp1":15.8219, "Sox10":4.1046, "Olig1":3.667, "Olig2":10.0833, "Pdgfra":1.6019,
+    "Gfap":2.5021, "Aqp4":3.7745, "Aldh1l1":1.9, "Slc1a3":4.2419,
+    "Cx3cr1":0.338, "P2ry12":2.1964, "Aif1":0.1631,
+    "Cldn5":2.731, "Pecam1":0.7922, "Flt1":0.8486,
+    "Th":0.6907, "Slc6a3":0.2282, "Ddc":0.3467, "Chat":1.1715, "Slc5a7":0.3458,
+    "Hcrt":0.2629, "Pomc":0.4979, "Agrp":0.0743, "Npy2r":0.7039,
+    "Drd1":1.9578, "Drd2":2.2644, "Adora2a":1.4587, "Penk":7.9741, "Tac1":2.7103, "Tac2":0.638,
+    "Crh":1.2985, "Trh":0.8894, "Oxt":0.4113, "Avp":0.1681
+  };
+
+  // Real per-cell transcript counts from the actual ABC Atlas MERFISH matrix
+  // (C57BL6J-638850-raw.h5ad, 4,334,174 cells x 550 directly-measured genes —
+  // the other ~7,900 genes in the atlas viewer are computationally imputed,
+  // not measured, so they aren't in this table). p90_positive is the 90th
+  // percentile of transcript count among cells that express the gene at all —
+  // i.e. "how far right the histogram tail goes" for the positive population,
+  // the same thing you're reading off the viewer by eye.
+  var MERFISH_STATS = {
+    "Slc17a7":{p90:182, median:18, det:0.6458}, "Slc17a6":{p90:23, median:2, det:0.3798},
+    "Slc17a8":{p90:2, median:1, det:0.1244}, "Gad2":{p90:35, median:3, det:0.5696},
+    "Pvalb":{p90:21, median:2, det:0.4549}, "Vip":{p90:4, median:1, det:0.1495},
+    "Lamp5":{p90:39, median:4, det:0.4847}, "Calb1":{p90:21, median:3, det:0.5229},
+    "Calb2":{p90:18, median:2, det:0.3875}, "Reln":{p90:9, median:2, det:0.3407},
+    "Rorb":{p90:8, median:2, det:0.5529}, "Bcl11b":{p90:16, median:3, det:0.4407},
+    "Sox10":{p90:35, median:4, det:0.3885}, "Gfap":{p90:22, median:3, det:0.6220},
+    "Aqp4":{p90:18, median:3, det:0.7724}, "Slc1a3":{p90:13, median:3, det:0.7924},
+    "Cldn5":{p90:47, median:2, det:0.3798}, "Th":{p90:14, median:1, det:0.1088},
+    "Slc6a3":{p90:2, median:1, det:0.0583}, "Ddc":{p90:4, median:1, det:0.2363},
+    "Chat":{p90:2, median:1, det:0.1971}, "Slc5a7":{p90:2, median:1, det:0.0854},
+    "Npy2r":{p90:8, median:1, det:0.1669}, "Drd1":{p90:23, median:2, det:0.2081},
+    "Drd2":{p90:19, median:2, det:0.2058}, "Penk":{p90:28, median:2, det:0.3738},
+    "Tac2":{p90:2, median:1, det:0.1311}, "Crh":{p90:3, median:1, det:0.2290}
+  };
+  // log(p90+1) = CALIB.slope * log(ISH_energy+1) + CALIB.intercept, fit across
+  // the 28 genes above that have both numbers (Pearson r=0.83, r^2=0.69).
+  // Used to put genes that are only in the ISH atlas table (not directly
+  // measured by this MERFISH panel) onto the same real-count-equivalent scale,
+  // clearly marked as estimated rather than measured.
+  var CALIB = { slope: 1.2196, intercept: 1.0724 };
+
+  function lookupGene(sym){
+    if(!sym) return null;
+    var s = sym.trim();
+    if(!s) return null;
+    var norm = Object.prototype.hasOwnProperty.call(MERFISH_STATS, s) || Object.prototype.hasOwnProperty.call(ABC_EXPRESSION, s)
+      ? s : (s.charAt(0).toUpperCase() + s.slice(1).toLowerCase());
+    if(Object.prototype.hasOwnProperty.call(MERFISH_STATS, norm)){
+      var m = MERFISH_STATS[norm];
+      return { source:"merfish", log: Math.log(m.p90 + 1), p90:m.p90, median:m.median, det:m.det };
+    }
+    if(Object.prototype.hasOwnProperty.call(ABC_EXPRESSION, norm)){
+      var ish = ABC_EXPRESSION[norm];
+      var estLog = CALIB.slope * Math.log(ish + 1) + CALIB.intercept;
+      return { source:"merfish-est", log: estLog, ish: ish, estP90: Math.round(Math.exp(estLog) - 1) };
+    }
+    return null;
+  }
+
+  function computeAutoScores(genes){
+    var logs = [];
+    genes.forEach(function(g){
+      g._match = g.manualOverride ? null : lookupGene(g.symbol);
+      if(g._match) logs.push(g._match.log);
+    });
+    var lo = logs.length ? Math.min.apply(null, logs) : 0;
+    var hi = logs.length ? Math.max.apply(null, logs) : 0;
+    genes.forEach(function(g){
+      if(g._match){
+        var score = (hi === lo) ? 6 : (1 + 9 * (g._match.log - lo) / (hi - lo));
+        g._effectiveAbundance = Math.round(score * 10) / 10;
+        g._abundanceSource = g._match.source;
+      }else{
+        g._effectiveAbundance = g.abundance;
+        g._abundanceSource = "manual";
+      }
+    });
+  }
+
+  var EXAMPLE = [
+    { symbol:"Mbp",     klass:"Oligodendrocyte" },
+    { symbol:"Slc17a7", klass:"Excitatory neuron (pan)" },
+    { symbol:"Gad1",    klass:"Inhibitory neuron (pan)" },
+    { symbol:"Cux2",    klass:"Excitatory neuron (L2/3/4)" },
+    { symbol:"Fezf2",   klass:"Excitatory neuron (L5 ET/CT)" },
+    { symbol:"Pvalb",   klass:"Inhibitory neuron (PV+)" },
+    { symbol:"Sst",     klass:"Inhibitory neuron (SST+)" },
+    { symbol:"Vip",     klass:"Inhibitory neuron (VIP+)" }
+  ];
+
+  var uid = 1;
+  function nextId(){ return "g" + (uid++); }
+
+  function freshGene(g, round){
+    return {
+      id: nextId(),
+      symbol: g.symbol || "",
+      klass: g.klass || "",
+      abundance: g.abundance || 5,
+      manualOverride: false,
+      round: round || 1,
+      dye: null
+    };
+  }
+
+  var state = { genes: [], use594: false, hasGFP: false, hasRFP: false };
+  var abundCells = {};
+
+  function loadExample(){
+    state.genes = [];
+    EXAMPLE.forEach(function(g, i){
+      state.genes.push(freshGene(g, i < 5 ? 1 : 2));
+    });
+  }
+
+  function loadState(){
+    try{
+      var raw = localStorage.getItem("hcr-panel-planner-v1");
+      if(raw){
+        var parsed = JSON.parse(raw);
+        if(parsed && Array.isArray(parsed.genes) && parsed.genes.length){
+          state.genes = parsed.genes;
+          state.use594 = !!parsed.use594;
+          state.hasGFP = !!parsed.hasGFP;
+          state.hasRFP = !!parsed.hasRFP;
+          var maxIdNum = 0;
+          state.genes.forEach(function(g){
+            var n = parseInt(String(g.id).replace("g",""), 10);
+            if(!isNaN(n) && n > maxIdNum) maxIdNum = n;
+          });
+          uid = maxIdNum + 1;
+          return;
+        }
+      }
+    }catch(e){}
+    loadExample();
+  }
+
+  function saveState(){
+    try{
+      localStorage.setItem("hcr-panel-planner-v1", JSON.stringify({
+        genes: state.genes, use594: state.use594, hasGFP: state.hasGFP, hasRFP: state.hasRFP
+      }));
+    }catch(e){}
+  }
+
+  // Which dye channels are usable in a given round, strongest to weakest.
+  // 594 is a global opt-in (slower acquisition). Endogenous GFP/RFP occupy the
+  // 488/546 channels until they're photobleached, which happens before round 2 —
+  // so that restriction applies to round 1 only.
+  function poolForRound(roundNum){
+    var pool = STRENGTH_DESC.filter(function(d){ return d !== "594" || state.use594; });
+    if((state.hasGFP || state.hasRFP) && roundNum === 1){
+      pool = pool.filter(function(d){ return d !== "488" && d !== "546"; });
+    }
+    return pool;
+  }
+
+  function tierOf(a){
+    if(a<=2) return {n:1,label:"very low"};
+    if(a<=4) return {n:2,label:"low"};
+    if(a<=6) return {n:3,label:"medium"};
+    if(a<=8) return {n:4,label:"high"};
+    return {n:5,label:"very high"};
+  }
+
+  function dyesForRound(roundNum, n){
+    if(n<=0) return [];
+    var strongToWeak = poolForRound(roundNum);
+    var weakToStrong = strongToWeak.slice().reverse();
+    var L = weakToStrong.length;
+    var count = Math.min(n, L);
+    if(count === 1) return [ strongToWeak[0] ];
+    var idxs = [];
+    for(var i=0;i<count;i++){ idxs.push(Math.round(i*(L-1)/(count-1))); }
+    return idxs.map(function(i){ return weakToStrong[i]; });
+  }
+
+  function groupByRound(genes){
+    var map = {};
+    genes.forEach(function(g){
+      var r = g.round || 1;
+      if(!map[r]) map[r] = [];
+      map[r].push(g);
+    });
+    return map;
+  }
+
+  function assignDyes(map){
+    Object.keys(map).forEach(function(r){
+      var roundNum = Number(r);
+      var genes = map[r];
+      var overridden = genes.filter(function(g){ return g.dye; });
+      var auto = genes.filter(function(g){ return !g.dye; })
+        .sort(function(a,b){ return b._effectiveAbundance - a._effectiveAbundance; });
+      var used = {};
+      overridden.forEach(function(g){ used[g.dye] = true; g._dye = g.dye; });
+      var pool = dyesForRound(roundNum, genes.length).filter(function(d){ return !used[d]; });
+      var pi = 0;
+      auto.forEach(function(g){
+        while(pi < pool.length && used[pool[pi]]) pi++;
+        g._dye = pool[pi] || null;
+        if(g._dye){ used[g._dye] = true; pi++; }
+      });
+    });
+  }
+
+  function computeWarnings(map){
+    var warnings = [];
+    Object.keys(map).sort(function(a,b){return a-b;}).forEach(function(r){
+      var roundNum = Number(r);
+      var genes = map[r];
+      var pool = poolForRound(roundNum);
+      var cap = pool.length;
+      if(genes.length > cap){
+        var why = (roundNum === 1 && (state.hasGFP || state.hasRFP))
+          ? " (488/546 are blocked this round — GFP/RFP need bleaching first" + (state.use594 ? "" : "; 594 is also switched off") + ")"
+          : (state.use594 ? "" : " (594 is switched off)");
+        warnings.push({level:"danger", text:"Round " + r + " has " + genes.length + " transcripts but only " + cap + " channel" + (cap===1?"":"s") + " available" + why + "."});
+      }
+      genes.forEach(function(g){
+        if(g.dye && pool.indexOf(g.dye) === -1){
+          var reason = g.dye === "594" ? "594 is switched off" : "488/546 are blocked in round 1 while GFP/RFP are present";
+          warnings.push({level:"danger", text:"Round " + r + ": " + g.symbol + " is manually pinned to " + g.dye + " nm, but " + reason + " right now."});
+        }
+      });
+      var seenDye = {};
+      genes.forEach(function(g){
+        if(!g._dye) return;
+        if(seenDye[g._dye]){
+          warnings.push({level:"danger", text:"Round " + r + ": " + seenDye[g._dye] + " and " + g.symbol + " are both sitting on " + g._dye + " nm."});
+        }
+        seenDye[g._dye] = g.symbol;
+      });
+      for(var i=0;i<genes.length;i++){
+        for(var j=i+1;j<genes.length;j++){
+          var a = genes[i], b = genes[j];
+          if(a.klass && b.klass && a.klass.trim().toLowerCase() === b.klass.trim().toLowerCase()){
+            var ai = WL.indexOf(a._dye), bi = WL.indexOf(b._dye);
+            var adjacent = ai>=0 && bi>=0 && Math.abs(ai-bi)===1;
+            if(adjacent){
+              warnings.push({level:"danger", text:"Round " + r + ": " + a.symbol + " and " + b.symbol + " are both \"" + a.klass + "\" and sit on adjacent channels (" + a._dye + "/" + b._dye + " nm) — risky if the two are ever co-expressed."});
+            }else{
+              warnings.push({level:"warn", text:"Round " + r + ": " + a.symbol + " and " + b.symbol + " are both \"" + a.klass + "\" in the same round."});
+            }
+          }
+        }
+      }
+      genes.forEach(function(g){
+        if(g._dye === "488" && g._effectiveAbundance <= 4){
+          warnings.push({level:"warn", text:"Round " + r + ": " + g.symbol + " is low-abundance but landed on 488, the weakest channel — consider pinning it to 647 or 546, or moving it to a round with less competition."});
+        }
+      });
+    });
+
+    // Multi-round degradation check: later rounds see more handling (strip/reprobe
+    // cycles) and should carry the more robust transcripts, so average abundance
+    // should trend flat-to-rising across rounds, not fall.
+    var roundNums = Object.keys(map).map(Number).sort(function(a,b){return a-b;});
+    if(roundNums.length > 1){
+      var roundAvg = {};
+      roundNums.forEach(function(r){
+        var genes = map[r];
+        roundAvg[r] = genes.reduce(function(s,g){ return s + g._effectiveAbundance; }, 0) / genes.length;
+      });
+      for(var ri=1; ri<roundNums.length; ri++){
+        var prevR = roundNums[ri-1], curR = roundNums[ri];
+        if(roundAvg[curR] < roundAvg[prevR] - 0.5){
+          warnings.push({level:"warn", text:"Round " + curR + "'s transcripts average weaker abundance (" + roundAvg[curR].toFixed(1) + "/10) than round " + prevR + "'s (" + roundAvg[prevR].toFixed(1) + "/10) — later rounds see more handling, so they should trend stronger, not weaker, to survive RNA degradation across cycles."});
+        }
+      }
+    }
+
+    return warnings;
+  }
+
+  function el(tag, attrs, children){
+    var e = document.createElement(tag);
+    if(attrs) Object.keys(attrs).forEach(function(k){
+      if(k === "class") e.className = attrs[k];
+      else if(k === "text") e.textContent = attrs[k];
+      else e.setAttribute(k, attrs[k]);
+    });
+    (children||[]).forEach(function(c){ if(c) e.appendChild(c); });
+    return e;
+  }
+
+  function renderAbundanceCellContent(g, container){
+    container.innerHTML = "";
+    var t = tierOf(g._effectiveAbundance);
+    if(g._abundanceSource === "merfish" || g._abundanceSource === "merfish-est"){
+      var m = g._match;
+      var badge = el("span", { class:"abund-tag tier-" + t.n, text: g._effectiveAbundance.toFixed(1) + " · " + t.label });
+      var src;
+      if(g._abundanceSource === "merfish"){
+        src = el("span", { class:"abund-src", title:
+          "Measured MERFISH counts for " + g.symbol + ": " + Math.round(m.det*100) + "% of cells positive, median " + m.median + ", 90th percentile " + m.p90 + " transcripts/cell.",
+          text:"MERFISH p90 " + m.p90 });
+      }else{
+        src = el("span", { class:"abund-src est", title:
+          g.symbol + " isn't in the 550-gene directly-measured MERFISH panel (imputed only). Estimated from its Allen ISH whole-brain energy (" + m.ish.toFixed(2) + ") via a fit against the 28 genes with real MERFISH counts (r²=0.69).",
+          text:"≈MERFISH p90 " + m.estP90 + "*" });
+      }
+      var link = el("button", { class:"abund-link", type:"button", text:"set manually" });
+      link.addEventListener("click", function(){ g.manualOverride = true; saveState(); refreshAllAbundanceCells(); });
+      container.appendChild(badge);
+      container.appendChild(src);
+      container.appendChild(link);
+    }else{
+      var range = el("input", { type:"range", id:"abund-"+g.id, min:"1", max:"10", step:"1" });
+      range.value = g.abundance;
+      var tag = el("span", { class:"abund-tag tier-" + t.n, text: g.abundance + " · " + t.label });
+      range.addEventListener("input", function(){
+        g.abundance = parseInt(range.value, 10);
+        var nt = tierOf(g.abundance);
+        tag.className = "abund-tag tier-" + nt.n;
+        tag.textContent = g.abundance + " · " + nt.label;
+        g._effectiveAbundance = g.abundance;
+        saveState(); renderPlan();
+      });
+      container.appendChild(range);
+      container.appendChild(tag);
+      if(lookupGene(g.symbol)){
+        var back = el("button", { class:"abund-link", type:"button", text:"use ABC data" });
+        back.addEventListener("click", function(){ g.manualOverride = false; saveState(); refreshAllAbundanceCells(); });
+        container.appendChild(back);
+      }
+    }
+  }
+
+  function refreshAllAbundanceCells(){
+    computeAutoScores(state.genes);
+    state.genes.forEach(function(g){
+      if(abundCells[g.id]) renderAbundanceCellContent(g, abundCells[g.id]);
+    });
+    renderPlan();
+  }
+
+  function renderTable(){
+    computeAutoScores(state.genes);
+    var body = document.getElementById("probeBody");
+    body.innerHTML = "";
+    abundCells = {};
+    state.genes.forEach(function(g){
+      var tr = document.createElement("tr");
+
+      var symInput = el("input", { type:"text", id:"sym-"+g.id, value:g.symbol, placeholder:"Gene symbol" });
+      symInput.value = g.symbol;
+      symInput.addEventListener("input", function(){ g.symbol = symInput.value; saveState(); refreshAllAbundanceCells(); });
+      tr.appendChild(el("td", null, [symInput]));
+
+      var klassInput = el("input", { type:"text", id:"klass-"+g.id, class:"klass-input", placeholder:"e.g. PV+ interneuron" });
+      klassInput.value = g.klass;
+      klassInput.addEventListener("input", function(){ g.klass = klassInput.value; saveState(); renderPlan(); });
+      tr.appendChild(el("td", null, [klassInput]));
+
+      var abundCell = el("div", { class:"abund-cell" });
+      abundCells[g.id] = abundCell;
+      renderAbundanceCellContent(g, abundCell);
+      tr.appendChild(el("td", null, [abundCell]));
+
+      var roundInput = el("input", { type:"number", id:"round-"+g.id, min:"1", max:"20" });
+      roundInput.value = g.round;
+      roundInput.addEventListener("input", function(){
+        var v = parseInt(roundInput.value, 10);
+        g.round = (v && v > 0) ? v : 1;
+        saveState(); renderPlan();
+      });
+      tr.appendChild(el("td", null, [roundInput]));
+
+      var dyeSelect = el("select", { id:"dye-"+g.id });
+      dyeSelect.appendChild(el("option", { value:"", text:"Auto" }));
+      WL.forEach(function(d){
+        dyeSelect.appendChild(el("option", { value:d, text:DYE_LABEL[d] }));
+      });
+      dyeSelect.value = g.dye || "";
+      dyeSelect.addEventListener("change", function(){
+        g.dye = dyeSelect.value || null;
+        saveState(); renderPlan();
+      });
+      tr.appendChild(el("td", null, [dyeSelect]));
+
+      var rm = el("button", { class:"row-remove", type:"button", title:"Remove", text:"×" });
+      rm.addEventListener("click", function(){
+        state.genes = state.genes.filter(function(x){ return x.id !== g.id; });
+        saveState(); renderAll();
+      });
+      tr.appendChild(el("td", null, [rm]));
+
+      body.appendChild(tr);
+    });
+  }
+
+  function renderPlan(){
+    computeAutoScores(state.genes);
+    var map = groupByRound(state.genes);
+    assignDyes(map);
+
+    var wrap = document.getElementById("roundsWrap");
+    wrap.innerHTML = "";
+    var roundNums = Object.keys(map).map(Number).sort(function(a,b){return a-b;});
+
+    if(roundNums.length === 0){
+      wrap.appendChild(el("p", { class:"hint", text:"Add a transcript above to see the round plan." }));
+    }
+
+    roundNums.forEach(function(r){
+      var cap = poolForRound(r).length;
+      var genes = map[r].slice().sort(function(a,b){
+        return WL.indexOf(a._dye) - WL.indexOf(b._dye);
+      });
+      var card = el("div", { class:"round-card" + (genes.length>cap ? " overflow" : "") });
+      var titleRow = el("div", { class:"round-title" }, [
+        el("h3", { text:"Round " + r }),
+        el("span", { text: genes.length + " target" + (genes.length===1?"":"s") + " + reference" })
+      ]);
+      card.appendChild(titleRow);
+      if(r === 1 && (state.hasGFP || state.hasRFP)){
+        card.appendChild(el("p", { class:"round-note", text:"488 and 546 blocked this round — GFP/RFP present, not yet photobleached." }));
+      }
+
+      var row = el("div", { class:"chip-row" });
+      var refChip = el("div", { class:"chip ref" }, [
+        el("div", { class:"swatch" }),
+        el("div", { class:"meta" }, [
+          el("span", { class:"g", text:"DAPI / NeuroTrace" }),
+          el("span", { class:"wl", text:"reference · every round" })
+        ])
+      ]);
+      row.appendChild(refChip);
+
+      genes.forEach(function(g){
+        var swatch = el("div", { class:"swatch" });
+        if(g._dye){
+          swatch.style.background = "var(" + DYE_VAR[g._dye] + ")";
+          if(g._dye === "750"){ swatch.style.backgroundImage = "repeating-linear-gradient(135deg, transparent 0 2px, rgba(255,255,255,.28) 2px 3px)"; }
+        }
+        var chip = el("div", { class:"chip" }, [
+          swatch,
+          el("div", { class:"meta" }, [
+            el("span", { class:"g", text:g.symbol || "(unnamed)" }),
+            el("span", { class:"k", text:g.klass || "—" }),
+            el("span", { class:"wl", text:g._dye ? DYE_LABEL[g._dye] : "unassigned" })
+          ])
+        ]);
+        row.appendChild(chip);
+      });
+
+      card.appendChild(row);
+      wrap.appendChild(card);
+    });
+
+    var warnings = computeWarnings(map);
+    var section = document.getElementById("warnSection");
+    var list = document.getElementById("warnList");
+    list.innerHTML = "";
+    if(warnings.length === 0){
+      section.hidden = state.genes.length === 0;
+      if(state.genes.length){
+        list.appendChild(el("li", { class:"warn", style:"background:var(--good-bg);color:var(--good-text);border-color:var(--good-border);", text:"No conflicts found across " + roundNums.length + " round" + (roundNums.length===1?"":"s") + "." }));
+      }
+    }else{
+      section.hidden = false;
+      warnings.forEach(function(w){
+        list.appendChild(el("li", { class:w.level, text:w.text }));
+      });
+    }
+  }
+
+  function renderAll(){ renderTable(); renderPlan(); }
+
+  document.getElementById("addRowBtn").addEventListener("click", function(){
+    var maxRound = state.genes.reduce(function(m,g){ return Math.max(m, g.round||1); }, 1);
+    state.genes.push(freshGene({ symbol:"", klass:"", abundance:5 }, maxRound));
+    saveState(); renderAll();
+  });
+
+  function arrangeRoundsWeakestFirst(){
+    computeAutoScores(state.genes);
+    var weakestFirst = state.genes.slice().sort(function(a,b){ return a._effectiveAbundance - b._effectiveAbundance; });
+    var idx = 0, round = 1;
+    while(idx < weakestFirst.length){
+      var cap = poolForRound(round).length || 1;
+      weakestFirst.slice(idx, idx + cap).forEach(function(g){ g.round = round; });
+      idx += cap;
+      round++;
+    }
+  }
+
+  document.getElementById("pasteListBtn").addEventListener("click", function(){
+    document.getElementById("pasteBox").hidden = false;
+    document.getElementById("pasteArea").focus();
+  });
+
+  document.getElementById("pasteCancelBtn").addEventListener("click", function(){
+    document.getElementById("pasteArea").value = "";
+    document.getElementById("pasteBox").hidden = true;
+  });
+
+  document.getElementById("pasteAddBtn").addEventListener("click", function(){
+    var raw = document.getElementById("pasteArea").value;
+    var parts = raw.split(/[\n,]+/).map(function(s){ return s.trim(); }).filter(function(s){ return s.length > 0; });
+    var existing = {};
+    state.genes.forEach(function(g){ existing[g.symbol.trim().toLowerCase()] = true; });
+    parts.forEach(function(sym){
+      var key = sym.toLowerCase();
+      if(existing[key]) return;
+      existing[key] = true;
+      state.genes.push(freshGene({ symbol:sym, klass:"", abundance:5 }, 1));
+    });
+    document.getElementById("pasteArea").value = "";
+    document.getElementById("pasteBox").hidden = true;
+    arrangeRoundsWeakestFirst();
+    saveState(); renderAll();
+  });
+
+  document.getElementById("loadExampleBtn").addEventListener("click", function(){
+    loadExample(); saveState(); renderAll();
+  });
+
+  document.getElementById("clearBtn").addEventListener("click", function(){
+    state.genes = []; saveState(); renderAll();
+  });
+
+  document.getElementById("autoRoundBtn").addEventListener("click", function(){
+    arrangeRoundsWeakestFirst();
+    saveState(); renderAll();
+  });
+
+  document.getElementById("copyBtn").addEventListener("click", function(){
+    computeAutoScores(state.genes);
+    var map = groupByRound(state.genes);
+    assignDyes(map);
+    var lines = ["Round\tDye (nm)\tGene\tCell class\tAbundance (1-10)\tSource"];
+    Object.keys(map).map(Number).sort(function(a,b){return a-b;}).forEach(function(r){
+      map[r].slice().sort(function(a,b){ return WL.indexOf(a._dye) - WL.indexOf(b._dye); }).forEach(function(g){
+        lines.push([r, g._dye||"—", g.symbol, g.klass, g._effectiveAbundance, g._abundanceSource].join("\t"));
+      });
+    });
+    var text = lines.join("\n");
+    var btn = document.getElementById("copyBtn");
+    function done(ok){ btn.textContent = ok ? "Copied ✓" : "Copy failed"; setTimeout(function(){ btn.textContent = "Copy plan as text"; }, 1600); }
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(function(){done(true);}, function(){done(false);});
+    }else{
+      done(false);
+    }
+  });
+
+  document.getElementById("use594Check").addEventListener("change", function(e){
+    state.use594 = e.target.checked; saveState(); renderPlan();
+  });
+  document.getElementById("gfpCheck").addEventListener("change", function(e){
+    state.hasGFP = e.target.checked; saveState(); renderPlan();
+  });
+  document.getElementById("rfpCheck").addEventListener("change", function(e){
+    state.hasRFP = e.target.checked; saveState(); renderPlan();
+  });
+
+  function syncSettingsUI(){
+    document.getElementById("use594Check").checked = state.use594;
+    document.getElementById("gfpCheck").checked = state.hasGFP;
+    document.getElementById("rfpCheck").checked = state.hasRFP;
+  }
+
+  function start(){
+    loadState();
+    syncSettingsUI();
+    renderAll();
+  }
+
+  start();
+})();
+</script>
+</body>
+</html>

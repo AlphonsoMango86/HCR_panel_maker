@@ -118,7 +118,7 @@ h1,h2,h3{ text-wrap:balance; font-family:"Chakra Petch", "IBM Plex Sans", sans-s
 .paste-actions{ display:flex; gap:8px; }
 
 .table-scroll{ overflow-x:auto; border:1px solid var(--border); border-radius:3px; }
-table{ border-collapse:collapse; width:100%; min-width:680px; font-size:13.5px; }
+table{ border-collapse:collapse; width:100%; min-width:760px; font-size:13.5px; }
 thead th{
   text-align:left; font-size:11px; font-weight:600; letter-spacing:.08em; text-transform:uppercase;
   color:var(--accent-text); background:var(--surface-2); padding:9px 10px; border-bottom:1px solid var(--border);
@@ -216,6 +216,33 @@ input[type="number"]{
   .abund-cell input[type="range"]{ width:64px; }
   table{ min-width:600px; }
 }
+
+.inv-grid{ display:grid; grid-template-columns:1fr 1fr; gap:22px; }
+.inv-col{ display:flex; flex-direction:column; gap:10px; min-width:0; }
+.inv-col h3{ font-size:13px; font-weight:600; letter-spacing:.06em; color:var(--accent2-text); }
+.inv-rows{ display:flex; flex-direction:column; gap:6px; }
+.inv-row{ display:flex; gap:8px; align-items:center; }
+.inv-row input[type="text"]{
+  flex:1; min-width:0; font-family:inherit; font-size:13.5px; font-style:italic; font-weight:500;
+  border:1px solid var(--border); background:var(--surface); color:var(--text); border-radius:3px; padding:6px 8px;
+}
+.inv-row input[type="text"]:focus{ outline:none; border-color:var(--accent); }
+.inv-row select{ padding:6px 6px; }
+.inv-row .arrow{ color:var(--text-dim); font-size:12px; }
+.init-tag{
+  font-family:"IBM Plex Mono", monospace; font-size:11px; font-weight:600; padding:2px 7px; border-radius:3px;
+  background:var(--accent2-soft); color:var(--accent2-text); white-space:nowrap;
+}
+.init-tag.need{ background:var(--warn-bg); color:var(--warn-text); border:1px dashed var(--warn-border); }
+.chip .flag{ font-size:10.5px; color:var(--warn-text); }
+.inv-send{ display:flex; align-items:center; gap:12px; flex-wrap:wrap; border-top:1px solid var(--border); padding-top:14px; }
+.inv-send .btn-send{
+  background:var(--accent-soft); color:var(--accent-text); border-color:var(--accent);
+  font-size:13px; padding:9px 16px;
+}
+.inv-send .send-msg{ font-size:12.5px; color:var(--text-dim); line-height:1.5; min-width:0; }
+.inv-send .send-msg.bad{ color:var(--warn-text); }
+@media (max-width:760px){ .inv-grid{ grid-template-columns:1fr; } }
 </style>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;0,700;1,500;1,600&family=IBM+Plex+Mono:wght@500;600&display=swap">
 </head>
@@ -239,6 +266,58 @@ input[type="number"]{
     <p class="hint">594 is off by default — it's a real 5th channel per round, but slows acquisition, so it's opt-in here. GFP or RFP blocks 488 and 546 in round 1 only; both return from round 2 on, once the endogenous signal is photobleached.</p>
   </section>
 
+  <section class="panel" id="inventorySection">
+    <div class="panel-head">
+      <h2>Probes &amp; hairpins in stock</h2>
+      <div class="panel-actions">
+        <button class="btn btn-ghost" id="exportStockBtn" type="button" title="Download just your probes and hairpins as a .csv file you can open in Excel">Export stock</button>
+        <button class="btn btn-ghost" id="loadStockBtn" type="button" title="Load a stock .csv you saved or typed up earlier">Load stock</button>
+        <input type="file" id="stockFile" accept=".csv,.json,text/csv,application/json" hidden>
+        <button class="btn btn-ghost danger-ghost" id="clearInvBtn" type="button">Clear inventory</button>
+      </div>
+    </div>
+    <p class="hint">List the probes you already have (gene + the initiator on it, X1&ndash;X10) and the hairpin sets you stock (initiator + fluorophore &mdash; <em>X2&nbsp;AF546</em> and <em>X2&nbsp;AF647</em> are two different hairpin sets). Once any hairpins are listed, each gene can only take a dye that exists as a hairpin for its initiator, the same initiator or dye is never used twice in one round, and initiators are reused freely across rounds (after stripping). Leave the hairpin list empty to plan without limits. <strong>Send to planning stage</strong> rebuilds the probe list below from the probes here, replacing whatever is in it.</p>
+    <div class="inv-grid">
+      <div class="inv-col">
+        <h3>Probes I have</h3>
+        <div class="inv-rows" id="probeInvRows"></div>
+        <div class="panel-actions">
+          <button class="btn btn-add" id="addProbeInvBtn" type="button">+ Add probe</button>
+          <button class="btn btn-ghost" id="pasteProbeInvBtn" type="button">Paste list</button>
+        </div>
+        <div class="paste-box" id="probeInvPasteBox" hidden>
+          <textarea id="probeInvPasteArea" rows="4" placeholder="One per line or comma-separated, e.g.&#10;Sst X2&#10;Pvalb X3"></textarea>
+          <p class="round-note" id="probeInvMsg" hidden></p>
+          <div class="paste-actions">
+            <button class="btn btn-primary" id="probeInvPasteAdd" type="button">Add &amp; auto-arrange rounds</button>
+            <button class="btn btn-ghost" id="probeInvPasteCancel" type="button">Cancel</button>
+          </div>
+        </div>
+      </div>
+      <div class="inv-col">
+        <h3>Hairpins I have</h3>
+        <div class="inv-rows" id="hairpinInvRows"></div>
+        <div class="panel-actions">
+          <button class="btn btn-add" id="addHairpinInvBtn" type="button">+ Add hairpin</button>
+          <button class="btn btn-ghost" id="pasteHairpinInvBtn" type="button">Paste list</button>
+        </div>
+        <div class="paste-box" id="hairpinInvPasteBox" hidden>
+          <textarea id="hairpinInvPasteArea" rows="4" placeholder="e.g. X2 AF546, X2 AF647&#10;X3 AF488 X3 AF750"></textarea>
+          <p class="round-note" id="hairpinInvMsg" hidden></p>
+          <div class="paste-actions">
+            <button class="btn btn-primary" id="hairpinInvPasteAdd" type="button">Add &amp; auto-arrange rounds</button>
+            <button class="btn btn-ghost" id="hairpinInvPasteCancel" type="button">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="inv-send">
+      <button class="btn btn-send" id="sendToPlanBtn" type="button" title="Add any missing genes to the probe list, then re-arrange rounds and dye choices around everything in stock">Send to planning stage &rarr;</button>
+      <button class="btn btn-ghost" id="undoSendBtn" type="button" hidden>Undo</button>
+      <span class="send-msg" id="sendMsg">Rebuilds the probe list below from the probes above, then sets the rounds and dyes.</span>
+    </div>
+  </section>
+
   <section class="panel" id="probeSection">
     <div class="panel-head">
       <h2>Probe list</h2>
@@ -246,10 +325,15 @@ input[type="number"]{
         <button class="btn btn-primary" id="pasteListBtn" type="button">Paste gene list</button>
         <button class="btn btn-ghost" id="loadExampleBtn" type="button">Load example panel</button>
         <button class="btn btn-ghost" id="autoRoundBtn" type="button" title="Sorts your full list by abundance and fills rounds weakest-first, so your strongest transcripts land in the later rounds">Auto-arrange rounds (weakest first)</button>
+        <button class="btn btn-ghost" id="exportBtn" type="button" title="Download this whole panel (genes, rounds, pinned dyes, settings, probes, hairpins) as a .csv file you can open in Excel">Export panel</button>
+        <button class="btn btn-ghost" id="importBtn" type="button" title="Load a panel .csv you exported or edited earlier">Import panel</button>
+        <input type="file" id="importFile" accept=".csv,.json,text/csv,application/json" hidden>
         <button class="btn btn-ghost danger-ghost" id="clearBtn" type="button">Clear all</button>
       </div>
     </div>
-    <p class="hint">Type a gene symbol and its abundance auto-fills, rescaled 1–10 relative to whatever else is currently in your list — add or remove a row and everyone's score shifts. 28 genes have real measured MERFISH counts (solid "MERFISH p90" badge); another ~30 are only in the atlas as imputed values, so their number is estimated from Allen ISH atlas data instead (dashed "≈MERFISH" badge, marked with *). Genes outside this ~60-gene set fall back to a manual slider; click "set manually" on any row to override. The rows below are a placeholder panel to show it working — swap in your own transcripts.</p>
+    <p class="round-note" id="fileMsg" hidden></p>
+    <div class="panel-actions"><button class="btn btn-ghost" id="undoImportBtn" type="button" hidden>Undo import</button></div>
+    <p class="hint">Type a gene symbol and its abundance auto-fills, rescaled 1–10 relative to whatever else is currently in your list — add or remove a row and everyone's score shifts. All 550 genes directly measured on the MERSCOPE have real MERFISH counts (solid "MERFISH p90" badge); another 31 are only in the atlas as imputed values, so their number is estimated from Allen ISH atlas data instead (dashed "≈MERFISH" badge, marked with *). Genes outside this ~580-gene set fall back to a manual slider; click "set manually" on any row to override. The rows below are a placeholder panel to show it working — swap in your own transcripts.</p>
     <div id="pasteBox" class="paste-box" hidden>
       <textarea id="pasteArea" rows="4" placeholder="Paste gene symbols — one per line, or comma-separated"></textarea>
       <div class="paste-actions">
@@ -260,7 +344,7 @@ input[type="number"]{
     <div class="table-scroll">
       <table id="probeTable">
         <thead>
-          <tr><th>Gene</th><th>Cell class / group</th><th>Abundance</th><th>Round</th><th>Dye</th><th></th></tr>
+          <tr><th>Gene</th><th>Cell class / group</th><th>Abundance</th><th>Probe</th><th>Round</th><th>Dye</th><th></th></tr>
         </thead>
         <tbody id="probeBody"></tbody>
       </table>
@@ -284,6 +368,7 @@ input[type="number"]{
 
   <footer class="footnote">
     <p><strong>How channels get picked:</strong> dye strength (how well a channel pulls a real signal out of background) runs 647&nbsp;&gt;&nbsp;546&nbsp;&gt;&nbsp;750&nbsp;&gt;&nbsp;594&nbsp;&gt;&nbsp;488. Within each round the most abundant transcript gets handed the weakest channel (488) and the scarcest transcript gets the strongest (647); 594 is only brought in when a round needs a fifth channel. DAPI or NeuroTrace blue rides along every round as a fixed registration reference, separate from the five gene channels. Set "Dye" to a specific value on any row to pin it manually — everything else re-balances around your pin. <strong>Rounds:</strong> filled weakest-abundance-first, so round 1 carries your scarcest transcripts on the freshest tissue and your most robust ones land in the last round, where they can better tolerate RNA loss from repeated strip-and-reprobe cycles. Turning on GFP or RFP above removes 488 and 546 from round&nbsp;1 only (both channels return from round 2 on, once the endogenous signal is photobleached) — so with either ticked, round 1 tops out at 2 targets (3 if 594 is also on). <strong>Abundance:</strong> pulled directly from the ABC Atlas MERFISH matrix (C57BL6J-638850-raw.h5ad, 4.33M cells) for the 550 genes actually measured on the MERSCOPE — the 90th percentile of transcript count among cells positive for that gene. The atlas viewer's other ~7,900 "genes" are computationally imputed rather than measured, so they have no real per-cell counts to read; for those, this number is estimated from Allen ISH whole-brain expression energy via a fit against the 28 genes that have both real MERFISH data and an ISH value (log–log fit, Pearson r=0.83, n=28) — marked with * and a dashed badge so it's never confused with a real measurement. Either way the raw value is rescaled 1–10 relative to the rest of your current list, log-scaled since transcript counts span orders of magnitude.</p>
+  <p style="margin-top:12px"><strong>Probes &amp; hairpins:</strong> an HCR hairpin set is an initiator (X1&ndash;X10) carrying one fluorophore, so a probe on X2 can only be developed in the dyes you stock as X2 hairpins. When you list hairpins, the planner solves each round as a matching problem: every gene is paired with one (initiator, dye) hairpin set you own, no initiator and no dye is used twice in the round, and among valid pairings it stays as close as possible to the normal rule (most abundant transcript &rarr; weakest dye, scarcest &rarr; strongest). Auto-arrange fills each round weakest-first, skipping past any gene that can&rsquo;t share the round and retrying it in the next. A gene added straight to the probe list rather than through your stock is still planned, on whichever free hairpin set suits it, and flagged &ldquo;probe needed&rdquo; so you know which initiator to order. <strong>Send to planning stage</strong> rebuilds the probe list from your stock, so the genes planned are exactly the ones you hold probes for; a gene already in the list keeps its cell class, pinned dye and any manual abundance, and <strong>Undo</strong> restores the previous list. Both export buttons write plain CSV that opens in Excel, so a stock list or a whole panel can be edited there or typed up from scratch and loaded back; the older .json exports still load too. With no hairpins listed, none of this applies and the planner works exactly as before.</p>
   </footer>
 </div>
 
@@ -333,20 +418,556 @@ input[type="number"]{
   // i.e. "how far right the histogram tail goes" for the positive population,
   // the same thing you're reading off the viewer by eye.
   var MERFISH_STATS = {
-    "Slc17a7":{p90:182, median:18, det:0.6458}, "Slc17a6":{p90:23, median:2, det:0.3798},
-    "Slc17a8":{p90:2, median:1, det:0.1244}, "Gad2":{p90:35, median:3, det:0.5696},
-    "Pvalb":{p90:21, median:2, det:0.4549}, "Vip":{p90:4, median:1, det:0.1495},
-    "Lamp5":{p90:39, median:4, det:0.4847}, "Calb1":{p90:21, median:3, det:0.5229},
-    "Calb2":{p90:18, median:2, det:0.3875}, "Reln":{p90:9, median:2, det:0.3407},
-    "Rorb":{p90:8, median:2, det:0.5529}, "Bcl11b":{p90:16, median:3, det:0.4407},
-    "Sox10":{p90:35, median:4, det:0.3885}, "Gfap":{p90:22, median:3, det:0.6220},
-    "Aqp4":{p90:18, median:3, det:0.7724}, "Slc1a3":{p90:13, median:3, det:0.7924},
-    "Cldn5":{p90:47, median:2, det:0.3798}, "Th":{p90:14, median:1, det:0.1088},
-    "Slc6a3":{p90:2, median:1, det:0.0583}, "Ddc":{p90:4, median:1, det:0.2363},
-    "Chat":{p90:2, median:1, det:0.1971}, "Slc5a7":{p90:2, median:1, det:0.0854},
-    "Npy2r":{p90:8, median:1, det:0.1669}, "Drd1":{p90:23, median:2, det:0.2081},
-    "Drd2":{p90:19, median:2, det:0.2058}, "Penk":{p90:28, median:2, det:0.3738},
-    "Tac2":{p90:2, median:1, det:0.1311}, "Crh":{p90:3, median:1, det:0.2290}
+    "2900052N01Rik":{p90:4, median:1, det:0.4675},
+    "4930509J09Rik":{p90:1, median:1, det:0.0618},
+    "9330158H04Rik":{p90:2, median:1, det:0.0786},
+    "A630012P03Rik":{p90:2, median:1, det:0.1472},
+    "A830036E02Rik":{p90:24, median:3, det:0.3035},
+    "Abcc9":{p90:14, median:1, det:0.1249},
+    "Abi3bp":{p90:6, median:1, det:0.1906},
+    "Acta2":{p90:21, median:1, det:0.1174},
+    "Adamts19":{p90:3, median:1, det:0.2879},
+    "Adamts2":{p90:4, median:1, det:0.3045},
+    "Adamts9":{p90:4, median:1, det:0.1907},
+    "Adamtsl1":{p90:4, median:1, det:0.2168},
+    "Adcy2":{p90:22, median:4, det:0.7488},
+    "Adcyap1":{p90:3, median:1, det:0.0935},
+    "Adgrf5":{p90:9, median:2, det:0.2722},
+    "Adgrv1":{p90:2, median:1, det:0.1327},
+    "Adra1a":{p90:3, median:1, det:0.2005},
+    "Adra1b":{p90:6, median:1, det:0.2971},
+    "Agt":{p90:19, median:3, det:0.4746},
+    "Agtr1a":{p90:2, median:1, det:0.0632},
+    "Angpt1":{p90:3, median:1, det:0.2907},
+    "Ankfn1":{p90:5, median:1, det:0.1317},
+    "Apela":{p90:2, median:1, det:0.0426},
+    "Aqp1":{p90:2, median:1, det:0.1228},
+    "Aqp4":{p90:18, median:3, det:0.7724},
+    "Aqp6":{p90:2, median:1, det:0.1799},
+    "Arhgap15":{p90:3, median:1, det:0.1406},
+    "Arhgap25":{p90:6, median:1, det:0.2151},
+    "Arhgap28":{p90:2, median:1, det:0.0525},
+    "Arhgap36":{p90:7, median:1, det:0.1465},
+    "B230323A14Rik":{p90:2, median:1, det:0.0628},
+    "Baiap3":{p90:30, median:2, det:0.2834},
+    "Barhl1":{p90:2, median:1, det:0.0730},
+    "Barhl2":{p90:5, median:1, det:0.1512},
+    "Bcl11a":{p90:9, median:2, det:0.4332},
+    "Bcl11b":{p90:16, median:3, det:0.4407},
+    "Blank-1":{p90:2, median:1, det:0.1093},
+    "Blank-10":{p90:2, median:1, det:0.0605},
+    "Blank-11":{p90:1, median:1, det:0.0383},
+    "Blank-12":{p90:1, median:1, det:0.0401},
+    "Blank-13":{p90:1, median:1, det:0.0450},
+    "Blank-14":{p90:1, median:1, det:0.0259},
+    "Blank-15":{p90:2, median:1, det:0.0623},
+    "Blank-16":{p90:1, median:1, det:0.0209},
+    "Blank-17":{p90:1, median:1, det:0.0325},
+    "Blank-18":{p90:1, median:1, det:0.0185},
+    "Blank-19":{p90:1, median:1, det:0.0557},
+    "Blank-2":{p90:1, median:1, det:0.0280},
+    "Blank-20":{p90:1, median:1, det:0.0296},
+    "Blank-21":{p90:1, median:1, det:0.0651},
+    "Blank-22":{p90:1, median:1, det:0.0449},
+    "Blank-23":{p90:2, median:1, det:0.0490},
+    "Blank-24":{p90:1, median:1, det:0.0282},
+    "Blank-25":{p90:1, median:1, det:0.0268},
+    "Blank-26":{p90:1, median:1, det:0.0405},
+    "Blank-27":{p90:1, median:1, det:0.0590},
+    "Blank-28":{p90:1, median:1, det:0.0258},
+    "Blank-29":{p90:1, median:1, det:0.0536},
+    "Blank-3":{p90:1, median:1, det:0.0626},
+    "Blank-30":{p90:2, median:1, det:0.1633},
+    "Blank-31":{p90:1, median:1, det:0.0329},
+    "Blank-32":{p90:2, median:1, det:0.0865},
+    "Blank-33":{p90:1, median:1, det:0.0334},
+    "Blank-34":{p90:3, median:1, det:0.1178},
+    "Blank-35":{p90:1, median:1, det:0.0594},
+    "Blank-36":{p90:1, median:1, det:0.0650},
+    "Blank-37":{p90:1, median:1, det:0.0395},
+    "Blank-38":{p90:1, median:1, det:0.0476},
+    "Blank-39":{p90:2, median:1, det:0.1037},
+    "Blank-4":{p90:1, median:1, det:0.0455},
+    "Blank-40":{p90:1, median:1, det:0.0741},
+    "Blank-41":{p90:1, median:1, det:0.0463},
+    "Blank-42":{p90:3, median:1, det:0.2973},
+    "Blank-43":{p90:1, median:1, det:0.0527},
+    "Blank-44":{p90:1, median:1, det:0.0556},
+    "Blank-45":{p90:1, median:1, det:0.0383},
+    "Blank-46":{p90:1, median:1, det:0.0559},
+    "Blank-47":{p90:1, median:1, det:0.0466},
+    "Blank-48":{p90:1, median:1, det:0.0216},
+    "Blank-49":{p90:1, median:1, det:0.0677},
+    "Blank-5":{p90:1, median:1, det:0.0378},
+    "Blank-50":{p90:2, median:1, det:0.2031},
+    "Blank-6":{p90:2, median:1, det:0.0948},
+    "Blank-7":{p90:2, median:1, det:0.0640},
+    "Blank-8":{p90:2, median:1, det:0.0658},
+    "Blank-9":{p90:2, median:1, det:0.1017},
+    "Bmp3":{p90:11, median:2, det:0.1732},
+    "Bmp4":{p90:3, median:1, det:0.1469},
+    "Bmpr1b":{p90:2, median:1, det:0.2351},
+    "Bnc2":{p90:4, median:1, det:0.3547},
+    "C030029H02Rik":{p90:5, median:1, det:0.1353},
+    "C1ql1":{p90:10, median:1, det:0.2141},
+    "C1ql3":{p90:31, median:3, det:0.3900},
+    "C230014O12Rik":{p90:2, median:1, det:0.0855},
+    "Cacng3":{p90:15, median:3, det:0.4947},
+    "Calb1":{p90:21, median:3, det:0.5229},
+    "Calb2":{p90:18, median:2, det:0.3875},
+    "Calcb":{p90:2, median:1, det:0.0321},
+    "Calcr":{p90:5, median:1, det:0.0400},
+    "Caln1":{p90:16, median:4, det:0.6803},
+    "Car4":{p90:10, median:2, det:0.3176},
+    "Cartpt":{p90:3, median:1, det:0.3137},
+    "Casr":{p90:2, median:1, det:0.1275},
+    "Cbln1":{p90:31, median:2, det:0.3055},
+    "Cbln2":{p90:6, median:1, det:0.3274},
+    "Cbln4":{p90:9, median:1, det:0.2719},
+    "Ccbe1":{p90:2, median:1, det:0.0619},
+    "Ccdc3":{p90:8, median:1, det:0.2112},
+    "Ccn3":{p90:36, median:3, det:0.3430},
+    "Ccn4":{p90:3, median:1, det:0.1537},
+    "Ccnd2":{p90:9, median:2, det:0.5655},
+    "Cd247":{p90:1, median:1, det:0.0319},
+    "Cd24a":{p90:4, median:1, det:0.2949},
+    "Cd34":{p90:16, median:3, det:0.4534},
+    "Cd36":{p90:3, median:1, det:0.0816},
+    "Cdh20":{p90:8, median:2, det:0.5770},
+    "Cdh6":{p90:9, median:2, det:0.4136},
+    "Cdh9":{p90:2, median:1, det:0.0985},
+    "Cdkn1a":{p90:7, median:2, det:0.4127},
+    "Cftr":{p90:2, median:1, det:0.1301},
+    "Cgnl1":{p90:9, median:2, det:0.4229},
+    "Chat":{p90:2, median:1, det:0.1971},
+    "Chn2":{p90:8, median:2, det:0.5157},
+    "Chodl":{p90:3, median:1, det:0.0451},
+    "Chrm2":{p90:8, median:2, det:0.2686},
+    "Chrm3":{p90:13, median:3, det:0.3779},
+    "Chrnb3":{p90:4, median:1, det:0.0543},
+    "Chst9":{p90:2, median:1, det:0.1111},
+    "Cidea":{p90:3, median:1, det:0.1236},
+    "Cited1":{p90:2, median:1, det:0.0915},
+    "Ckap2l":{p90:2, median:1, det:0.0992},
+    "Cldn5":{p90:47, median:2, det:0.3798},
+    "Clic5":{p90:6, median:1, det:0.2306},
+    "Clic6":{p90:5, median:1, det:0.2460},
+    "Cnih3":{p90:4, median:1, det:0.2514},
+    "Cnr1":{p90:28, median:4, det:0.6399},
+    "Cntn6":{p90:8, median:2, det:0.4732},
+    "Cntnap3":{p90:9, median:1, det:0.2285},
+    "Col11a1":{p90:6, median:1, det:0.4120},
+    "Col18a1":{p90:4, median:1, det:0.1794},
+    "Col23a1":{p90:8, median:1, det:0.2415},
+    "Col24a1":{p90:8, median:1, det:0.1016},
+    "Col27a1":{p90:3, median:1, det:0.1818},
+    "Col5a1":{p90:12, median:2, det:0.2186},
+    "Col8a1":{p90:5, median:1, det:0.0870},
+    "Corin":{p90:2, median:1, det:0.1902},
+    "Cpa6":{p90:5, median:1, det:0.0785},
+    "Cpne8":{p90:2, median:1, det:0.1613},
+    "Creb3l1":{p90:3, median:1, det:0.2260},
+    "Crh":{p90:3, median:1, det:0.2290},
+    "Crhbp":{p90:8, median:1, det:0.1281},
+    "Crym":{p90:17, median:3, det:0.2914},
+    "Ctss":{p90:10, median:2, det:0.4289},
+    "Ctxn3":{p90:3, median:1, det:0.1896},
+    "Cxcl14":{p90:13, median:4, det:0.8102},
+    "Cyp26b1":{p90:7, median:1, det:0.2456},
+    "D130009I18Rik":{p90:1, median:1, det:0.0427},
+    "D130079A08Rik":{p90:1, median:1, det:0.0373},
+    "Dach1":{p90:7, median:2, det:0.3646},
+    "Dbh":{p90:1, median:1, det:0.0516},
+    "Dchs2":{p90:5, median:1, det:0.2981},
+    "Dcn":{p90:15, median:1, det:0.2228},
+    "Ddc":{p90:4, median:1, det:0.2363},
+    "Dgkk":{p90:5, median:1, det:0.1527},
+    "Dio3":{p90:6, median:1, det:0.0511},
+    "Dlk1":{p90:18, median:1, det:0.1700},
+    "Dmbx1":{p90:2, median:1, det:0.0625},
+    "Dmrt2":{p90:2, median:1, det:0.1118},
+    "Dock5":{p90:9, median:2, det:0.3619},
+    "Drd1":{p90:23, median:2, det:0.2081},
+    "Drd2":{p90:19, median:2, det:0.2058},
+    "Drd3":{p90:3, median:1, det:0.1313},
+    "Drd5":{p90:4, median:1, det:0.1454},
+    "Dscaml1":{p90:10, median:3, det:0.5762},
+    "Dsg2":{p90:3, median:1, det:0.2740},
+    "Ebf1":{p90:5, median:1, det:0.2615},
+    "Ebf2":{p90:3, median:1, det:0.0919},
+    "Ebf3":{p90:10, median:1, det:0.1719},
+    "Ecel1":{p90:15, median:1, det:0.1420},
+    "Edaradd":{p90:2, median:1, det:0.0369},
+    "Egfem1":{p90:2, median:1, det:0.1363},
+    "Egflam":{p90:6, median:1, det:0.1510},
+    "Egln3":{p90:4, median:1, det:0.2776},
+    "Egr2":{p90:10, median:1, det:0.1568},
+    "Elfn1":{p90:6, median:1, det:0.3474},
+    "Emx2":{p90:2, median:1, det:0.2046},
+    "En1":{p90:4, median:1, det:0.1325},
+    "Eomes":{p90:3, median:1, det:0.0534},
+    "Epha3":{p90:3, median:1, det:0.1950},
+    "Epha4":{p90:23, median:4, det:0.6992},
+    "Esyt3":{p90:4, median:1, det:0.1373},
+    "Ethe1":{p90:2, median:1, det:0.3100},
+    "Evx2":{p90:2, median:1, det:0.0624},
+    "Eya2":{p90:5, median:1, det:0.1551},
+    "Fam163a":{p90:3, median:1, det:0.2919},
+    "Fbln2":{p90:6, median:1, det:0.1453},
+    "Fbn2":{p90:4, median:1, det:0.1674},
+    "Fgf10":{p90:3, median:1, det:0.1309},
+    "Fibcd1":{p90:6, median:1, det:0.2095},
+    "Fign":{p90:3, median:1, det:0.2224},
+    "Fli1":{p90:6, median:2, det:0.6201},
+    "Fosl2":{p90:7, median:2, det:0.4464},
+    "Foxa1":{p90:3, median:1, det:0.3171},
+    "Foxa2":{p90:2, median:1, det:0.0627},
+    "Foxb1":{p90:2, median:1, det:0.0663},
+    "Foxo1":{p90:7, median:2, det:0.6366},
+    "Fras1":{p90:11, median:2, det:0.3370},
+    "Frzb":{p90:5, median:1, det:0.2126},
+    "Fstl5":{p90:5, median:1, det:0.2745},
+    "Fxyd6":{p90:18, median:3, det:0.6530},
+    "Fyb":{p90:3, median:1, det:0.1552},
+    "G630016G05Rik":{p90:2, median:1, det:0.0840},
+    "Gabrq":{p90:6, median:1, det:0.0849},
+    "Gad2":{p90:35, median:3, det:0.5696},
+    "Gal":{p90:2, median:1, det:0.0708},
+    "Galnt14":{p90:4, median:1, det:0.2100},
+    "Galnt18":{p90:11, median:3, det:0.6088},
+    "Galr1":{p90:5, median:1, det:0.0901},
+    "Gata3":{p90:7, median:1, det:0.0789},
+    "Gda":{p90:17, median:4, det:0.4785},
+    "Gfap":{p90:22, median:3, det:0.6220},
+    "Gfra1":{p90:5, median:1, det:0.4280},
+    "Gja1":{p90:41, median:5, det:0.8583},
+    "Gli2":{p90:3, median:1, det:0.1909},
+    "Gli3":{p90:4, median:1, det:0.3009},
+    "Glis3":{p90:3, median:1, det:0.1646},
+    "Glra2":{p90:6, median:1, det:0.2529},
+    "Glra3":{p90:7, median:1, det:0.2681},
+    "Gm30564":{p90:2, median:1, det:0.1508},
+    "Gpc3":{p90:3, median:1, det:0.3246},
+    "Gpr101":{p90:12, median:1, det:0.1072},
+    "Gpr139":{p90:4, median:1, det:0.1811},
+    "Gpr149":{p90:4, median:1, det:0.1573},
+    "Gpr39":{p90:3, median:1, det:0.2717},
+    "Gpr4":{p90:4, median:1, det:0.2191},
+    "Gpr83":{p90:10, median:2, det:0.3071},
+    "Gpr88":{p90:36, median:3, det:0.2944},
+    "Gpx3":{p90:5, median:1, det:0.2026},
+    "Grem1":{p90:2, median:1, det:0.1094},
+    "Grik1":{p90:12, median:2, det:0.3363},
+    "Grik3":{p90:21, median:4, det:0.4855},
+    "Grin2c":{p90:14, median:2, det:0.5447},
+    "Grm1":{p90:10, median:2, det:0.4853},
+    "Grm3":{p90:21, median:6, det:0.7991},
+    "Grm8":{p90:4, median:1, det:0.2160},
+    "Grp":{p90:5, median:1, det:0.1296},
+    "Grpr":{p90:3, median:1, det:0.1215},
+    "Gsta4":{p90:6, median:2, det:0.6686},
+    "Hcrtr2":{p90:3, median:1, det:0.0879},
+    "Hdc":{p90:2, median:1, det:0.1498},
+    "Hgf":{p90:4, median:1, det:0.1504},
+    "Hmcn1":{p90:8, median:1, det:0.2077},
+    "Hopx":{p90:8, median:2, det:0.6071},
+    "Hoxb3":{p90:3, median:1, det:0.0596},
+    "Hoxb5":{p90:4, median:1, det:0.1533},
+    "Hoxb8":{p90:2, median:1, det:0.2272},
+    "Hpgd":{p90:3, median:1, det:0.1545},
+    "Hs3st2":{p90:16, median:2, det:0.3618},
+    "Hs3st3b1":{p90:3, median:1, det:0.1188},
+    "Hs3st4":{p90:14, median:2, det:0.5306},
+    "Hspg2":{p90:3, median:1, det:0.2533},
+    "Htr1b":{p90:7, median:2, det:0.2932},
+    "Htr1d":{p90:2, median:1, det:0.0848},
+    "Htr2a":{p90:9, median:2, det:0.3121},
+    "Htr3a":{p90:3, median:1, det:0.0802},
+    "Htr7":{p90:4, median:1, det:0.1966},
+    "Igf1":{p90:5, median:1, det:0.1818},
+    "Igf2":{p90:40, median:2, det:0.2302},
+    "Igfbp2":{p90:11, median:2, det:0.4378},
+    "Igfbp4":{p90:12, median:2, det:0.4395},
+    "Igfbp6":{p90:7, median:2, det:0.2554},
+    "Igfbpl1":{p90:3, median:1, det:0.1136},
+    "Ighm":{p90:10, median:1, det:0.2943},
+    "Igsf1":{p90:5, median:1, det:0.2295},
+    "Il31ra":{p90:2, median:1, det:0.0661},
+    "Irs4":{p90:6, median:1, det:0.1102},
+    "Irx2":{p90:4, median:1, det:0.1051},
+    "Isl1":{p90:4, median:1, det:0.1906},
+    "Kazald1":{p90:3, median:1, det:0.2222},
+    "Kcnab3":{p90:13, median:2, det:0.4515},
+    "Kcng1":{p90:9, median:2, det:0.2894},
+    "Kcng2":{p90:4, median:1, det:0.1952},
+    "Kcnh8":{p90:3, median:1, det:0.1328},
+    "Kcnip1":{p90:2, median:1, det:0.0613},
+    "Kcnj5":{p90:2, median:1, det:0.1217},
+    "Kcnj8":{p90:4, median:1, det:0.2783},
+    "Kcnk9":{p90:18, median:4, det:0.4931},
+    "Kcnmb2":{p90:4, median:1, det:0.1197},
+    "Kcns3":{p90:5, median:1, det:0.1706},
+    "Kctd8":{p90:6, median:2, det:0.3926},
+    "Kif11":{p90:2, median:1, det:0.1086},
+    "Kit":{p90:21, median:2, det:0.3244},
+    "Kitl":{p90:8, median:2, det:0.4451},
+    "Kl":{p90:5, median:1, det:0.2072},
+    "Klhl14":{p90:4, median:1, det:0.0565},
+    "Klk6":{p90:28, median:1, det:0.0980},
+    "Lama1":{p90:4, median:1, det:0.1699},
+    "Lamp5":{p90:39, median:4, det:0.4847},
+    "Lancl3":{p90:4, median:1, det:0.2538},
+    "Ldb2":{p90:10, median:2, det:0.5431},
+    "Lgr6":{p90:4, median:1, det:0.2287},
+    "Lhfp":{p90:10, median:3, det:0.6856},
+    "Lhfpl5":{p90:3, median:1, det:0.1722},
+    "Lhx1":{p90:5, median:1, det:0.1527},
+    "Lhx2":{p90:3, median:1, det:0.2235},
+    "Lhx8":{p90:2, median:1, det:0.2002},
+    "Lhx9":{p90:2, median:1, det:0.0597},
+    "Lmo1":{p90:3, median:1, det:0.1960},
+    "Lmo3":{p90:7, median:2, det:0.3460},
+    "Lncenc1":{p90:4, median:1, det:0.0944},
+    "Lpar1":{p90:12, median:2, det:0.6015},
+    "Lpl":{p90:7, median:1, det:0.2016},
+    "Lrp4":{p90:7, median:2, det:0.6854},
+    "Lsp1":{p90:3, median:1, det:0.1066},
+    "Ltbp1":{p90:4, median:1, det:0.3548},
+    "Lypd1":{p90:8, median:2, det:0.3295},
+    "Lypd6":{p90:5, median:1, det:0.4058},
+    "Mab21l2":{p90:5, median:1, det:0.1304},
+    "Maf":{p90:6, median:1, det:0.2986},
+    "Man1a":{p90:5, median:1, det:0.3355},
+    "Marcksl1":{p90:15, median:3, det:0.6684},
+    "Mcm6":{p90:3, median:1, det:0.2640},
+    "Mctp2":{p90:3, median:1, det:0.1285},
+    "Mdga1":{p90:7, median:1, det:0.3444},
+    "Mecom":{p90:3, median:1, det:0.1509},
+    "Medag":{p90:5, median:1, det:0.2688},
+    "Megf11":{p90:3, median:1, det:0.1513},
+    "Meis1":{p90:5, median:2, det:0.3953},
+    "Met":{p90:4, median:1, det:0.1342},
+    "Mkx":{p90:8, median:2, det:0.3018},
+    "Mmel1":{p90:2, median:1, det:0.1023},
+    "Mog":{p90:43, median:2, det:0.4339},
+    "Moxd1":{p90:9, median:1, det:0.1374},
+    "Mpped2":{p90:3, median:1, det:0.3403},
+    "Mrpl16":{p90:3, median:1, det:0.5182},
+    "Myo5b":{p90:4, median:1, det:0.2505},
+    "Ndnf":{p90:9, median:1, det:0.2352},
+    "Ndst4":{p90:9, median:1, det:0.1979},
+    "Necab1":{p90:13, median:2, det:0.4608},
+    "Nfib":{p90:15, median:5, det:0.8710},
+    "Nfix":{p90:24, median:7, det:0.9156},
+    "Ngb":{p90:4, median:1, det:0.2158},
+    "Nhlh2":{p90:3, median:1, det:0.2965},
+    "Nkx2-1":{p90:5, median:1, det:0.0841},
+    "Nkx2-4":{p90:2, median:1, det:0.0543},
+    "Nos1":{p90:10, median:2, det:0.4035},
+    "Npas1":{p90:7, median:1, det:0.1558},
+    "Npbwr1":{p90:2, median:1, det:0.0619},
+    "Npnt":{p90:5, median:1, det:0.2173},
+    "Npsr1":{p90:2, median:1, det:0.0798},
+    "Nptx2":{p90:19, median:2, det:0.3500},
+    "Npy2r":{p90:8, median:1, det:0.1669},
+    "Nr2f1":{p90:6, median:2, det:0.5518},
+    "Nr2f2":{p90:5, median:2, det:0.4783},
+    "Nr4a2":{p90:12, median:2, det:0.3362},
+    "Nr4a3":{p90:8, median:2, det:0.3532},
+    "Nrn1":{p90:22, median:3, det:0.6049},
+    "Nrp1":{p90:8, median:2, det:0.5348},
+    "Ntn1":{p90:9, median:2, det:0.3210},
+    "Ntng1":{p90:3, median:1, det:0.1401},
+    "Nts":{p90:3, median:1, det:0.1437},
+    "Nwd2":{p90:5, median:1, det:0.3018},
+    "Nxph1":{p90:17, median:2, det:0.3308},
+    "Nxph2":{p90:2, median:1, det:0.0876},
+    "Nxph4":{p90:14, median:1, det:0.2096},
+    "Onecut2":{p90:5, median:1, det:0.2165},
+    "Onecut3":{p90:2, median:1, det:0.0770},
+    "Opalin":{p90:25, median:2, det:0.3327},
+    "Oprd1":{p90:7, median:2, det:0.3102},
+    "Oprk1":{p90:4, median:1, det:0.1237},
+    "Osbpl3":{p90:5, median:2, det:0.3664},
+    "Osr1":{p90:3, median:1, det:0.1464},
+    "Otof":{p90:15, median:2, det:0.1754},
+    "Otp":{p90:4, median:1, det:0.0950},
+    "Otx2":{p90:5, median:1, det:0.1274},
+    "Oxtr":{p90:2, median:1, det:0.0842},
+    "Pappa":{p90:3, median:1, det:0.1202},
+    "Parm1":{p90:12, median:2, det:0.5278},
+    "Pax5":{p90:2, median:1, det:0.1247},
+    "Pax6":{p90:6, median:1, det:0.3732},
+    "Pax7":{p90:2, median:1, det:0.1204},
+    "Pax8":{p90:4, median:1, det:0.0445},
+    "Pcp4l1":{p90:28, median:5, det:0.7627},
+    "Pde11a":{p90:2, median:1, det:0.1843},
+    "Pde1a":{p90:19, median:3, det:0.5384},
+    "Pde3a":{p90:4, median:1, det:0.2358},
+    "Pdgfd":{p90:4, median:1, det:0.3138},
+    "Pdyn":{p90:14, median:1, det:0.2688},
+    "Pdzrn3":{p90:10, median:2, det:0.3789},
+    "Penk":{p90:28, median:2, det:0.3738},
+    "Phox2b":{p90:2, median:1, det:0.0461},
+    "Piezo2":{p90:1, median:1, det:0.0294},
+    "Pif1":{p90:1, median:1, det:0.0668},
+    "Pitx2":{p90:2, median:1, det:0.0894},
+    "Plpp4":{p90:3, median:1, det:0.1617},
+    "Pnoc":{p90:7, median:1, det:0.1353},
+    "Popdc3":{p90:3, median:1, det:0.0843},
+    "Pou3f1":{p90:6, median:2, det:0.3283},
+    "Pou3f3":{p90:17, median:6, det:0.8694},
+    "Pou4f1":{p90:2, median:1, det:0.0624},
+    "Pou6f2":{p90:3, median:1, det:0.2292},
+    "Pparg":{p90:4, median:1, det:0.1914},
+    "Ppp1r17":{p90:7, median:1, det:0.1269},
+    "Prkcq":{p90:5, median:1, det:0.2597},
+    "Prkd1":{p90:4, median:1, det:0.4026},
+    "Prkg2":{p90:2, median:1, det:0.1695},
+    "Prlr":{p90:6, median:1, det:0.1373},
+    "Prok2":{p90:2, median:1, det:0.1029},
+    "Prom1":{p90:6, median:1, det:0.2484},
+    "Prrxl1":{p90:2, median:1, det:0.0648},
+    "Ptger3":{p90:2, median:1, det:0.0618},
+    "Pth2r":{p90:3, median:1, det:0.0987},
+    "Ptk2b":{p90:15, median:3, det:0.5058},
+    "Ptprm":{p90:15, median:3, det:0.7412},
+    "Pvalb":{p90:21, median:2, det:0.4549},
+    "Qpct":{p90:4, median:1, det:0.3831},
+    "Qrfpr":{p90:3, median:1, det:0.0847},
+    "Rab3b":{p90:11, median:2, det:0.4374},
+    "Ramp1":{p90:6, median:2, det:0.6502},
+    "Ramp3":{p90:6, median:1, det:0.2756},
+    "Rasgrp1":{p90:53, median:7, det:0.6321},
+    "Rbp4":{p90:5, median:2, det:0.4524},
+    "Reln":{p90:9, median:2, det:0.3407},
+    "Ret":{p90:3, median:1, det:0.1195},
+    "Rgs4":{p90:57, median:7, det:0.7253},
+    "Rgs6":{p90:8, median:2, det:0.4644},
+    "Rmst":{p90:5, median:1, det:0.3172},
+    "Ror1":{p90:3, median:1, det:0.1937},
+    "Rorb":{p90:8, median:2, det:0.5529},
+    "Rprm":{p90:14, median:2, det:0.3744},
+    "Rspo1":{p90:6, median:1, det:0.1524},
+    "Rspo2":{p90:8, median:1, det:0.2229},
+    "Rwdd2a":{p90:4, median:1, det:0.3210},
+    "Rxfp1":{p90:14, median:1, det:0.1362},
+    "Rxfp3":{p90:2, median:1, det:0.1018},
+    "Samd5":{p90:7, median:2, det:0.5469},
+    "Scgn":{p90:2, median:1, det:0.0824},
+    "Scn4b":{p90:37, median:3, det:0.4163},
+    "Scn5a":{p90:3, median:1, det:0.1751},
+    "Scn7a":{p90:5, median:1, det:0.0915},
+    "Sema3c":{p90:3, median:1, det:0.2101},
+    "Sema3e":{p90:6, median:1, det:0.2668},
+    "Sema5a":{p90:10, median:2, det:0.4736},
+    "Serpinb8":{p90:3, median:1, det:0.1145},
+    "Serpine2":{p90:17, median:6, det:0.9062},
+    "Shisa6":{p90:8, median:2, det:0.2807},
+    "Shox2":{p90:7, median:1, det:0.1790},
+    "Shroom3":{p90:4, median:1, det:0.2826},
+    "Six3":{p90:12, median:2, det:0.1840},
+    "Skor1":{p90:4, median:1, det:0.0994},
+    "Sla":{p90:7, median:1, det:0.2534},
+    "Slc17a6":{p90:23, median:2, det:0.3798},
+    "Slc17a7":{p90:182, median:18, det:0.6458},
+    "Slc17a8":{p90:2, median:1, det:0.1244},
+    "Slc1a3":{p90:13, median:3, det:0.7924},
+    "Slc30a3":{p90:20, median:3, det:0.2983},
+    "Slc32a1":{p90:38, median:3, det:0.5635},
+    "Slc38a1":{p90:19, median:5, det:0.8371},
+    "Slc5a7":{p90:2, median:1, det:0.0854},
+    "Slc6a3":{p90:2, median:1, det:0.0583},
+    "Slc6a4":{p90:2, median:1, det:0.0518},
+    "Slc6a5":{p90:10, median:1, det:0.1352},
+    "Slc7a10":{p90:12, median:2, det:0.4037},
+    "Slc7a11":{p90:7, median:1, det:0.4034},
+    "Slit2":{p90:3, median:1, det:0.2005},
+    "Slit3":{p90:15, median:3, det:0.4927},
+    "Smoc2":{p90:9, median:2, det:0.1389},
+    "Sntg2":{p90:5, median:1, det:0.3119},
+    "Sorcs3":{p90:11, median:2, det:0.4780},
+    "Sox10":{p90:35, median:4, det:0.3885},
+    "Sox14":{p90:3, median:1, det:0.0796},
+    "Sox2":{p90:9, median:3, det:0.6733},
+    "Sox5":{p90:5, median:2, det:0.4444},
+    "Sox6":{p90:3, median:1, det:0.5018},
+    "Sp8":{p90:4, median:1, det:0.3211},
+    "Sp9":{p90:7, median:1, det:0.1736},
+    "Spin2c":{p90:2, median:1, det:0.1568},
+    "Spock3":{p90:25, median:5, det:0.7242},
+    "Spon1":{p90:15, median:3, det:0.6167},
+    "St18":{p90:5, median:2, det:0.2383},
+    "St3gal1":{p90:3, median:1, det:0.3574},
+    "St6galnac5":{p90:12, median:2, det:0.5095},
+    "Stac":{p90:4, median:1, det:0.1431},
+    "Stxbp6":{p90:12, median:3, det:0.6177},
+    "Sulf2":{p90:22, median:4, det:0.6456},
+    "Sv2b":{p90:52, median:6, det:0.6752},
+    "Sv2c":{p90:14, median:2, det:0.3920},
+    "Svep1":{p90:4, median:1, det:0.1780},
+    "Syndig1":{p90:8, median:2, det:0.5511},
+    "Syndig1l":{p90:10, median:2, det:0.2705},
+    "Synpr":{p90:21, median:3, det:0.4970},
+    "Syt10":{p90:10, median:2, det:0.2589},
+    "Syt17":{p90:14, median:2, det:0.4068},
+    "Syt2":{p90:32, median:3, det:0.4208},
+    "Syt6":{p90:18, median:2, det:0.3349},
+    "Tac2":{p90:2, median:1, det:0.1311},
+    "Tacr1":{p90:6, median:1, det:0.1313},
+    "Tacr3":{p90:4, median:1, det:0.1454},
+    "Tafa1":{p90:3, median:1, det:0.1286},
+    "Tafa2":{p90:12, median:2, det:0.4501},
+    "Tafa4":{p90:3, median:1, det:0.0667},
+    "Tal1":{p90:4, median:1, det:0.1791},
+    "Tbcc":{p90:4, median:2, det:0.6064},
+    "Tbx3":{p90:5, median:1, det:0.1928},
+    "Tcerg1l":{p90:3, median:1, det:0.2073},
+    "Tcf7l2":{p90:8, median:2, det:0.5114},
+    "Tent5a":{p90:4, median:1, det:0.2209},
+    "Tfap2b":{p90:8, median:1, det:0.0991},
+    "Tfap2d":{p90:4, median:1, det:0.0967},
+    "Tgfbr2":{p90:10, median:2, det:0.4185},
+    "Th":{p90:14, median:1, det:0.1088},
+    "Tll1":{p90:4, median:1, det:0.1828},
+    "Tmem132c":{p90:7, median:1, det:0.2120},
+    "Tmem215":{p90:9, median:1, det:0.1904},
+    "Tmie":{p90:3, median:1, det:0.3299},
+    "Tnc":{p90:5, median:1, det:0.2009},
+    "Tnnt1":{p90:5, median:1, det:0.1352},
+    "Tox":{p90:6, median:1, det:0.3752},
+    "Tox3":{p90:5, median:1, det:0.3315},
+    "Trhde":{p90:9, median:2, det:0.3848},
+    "Trhr":{p90:7, median:1, det:0.0980},
+    "Trpc7":{p90:5, median:1, det:0.1618},
+    "Tshz2":{p90:4, median:1, det:0.4282},
+    "Ttc29":{p90:2, median:1, det:0.0618},
+    "Ttc6":{p90:2, median:1, det:0.1483},
+    "Unc13c":{p90:10, median:3, det:0.6355},
+    "Unc5d":{p90:9, median:2, det:0.3881},
+    "Ung":{p90:2, median:1, det:0.0921},
+    "Ust":{p90:4, median:1, det:0.3800},
+    "Vcan":{p90:7, median:1, det:0.2118},
+    "Vegfc":{p90:3, median:1, det:0.2032},
+    "Vip":{p90:4, median:1, det:0.1495},
+    "Vit":{p90:3, median:1, det:0.1414},
+    "Vsx2":{p90:2, median:1, det:0.2514},
+    "Vwa5b1":{p90:4, median:1, det:0.2449},
+    "Vwc2":{p90:4, median:1, det:0.3286},
+    "Vwc2l":{p90:6, median:1, det:0.2185},
+    "Whrn":{p90:12, median:2, det:0.5610},
+    "Wif1":{p90:3, median:1, det:0.1573},
+    "Wls":{p90:3, median:1, det:0.3028},
+    "Wnt7b":{p90:4, median:1, det:0.3460},
+    "Zbtb16":{p90:8, median:2, det:0.5673},
+    "Zeb2":{p90:7, median:2, det:0.5974},
+    "Zfhx4":{p90:7, median:2, det:0.4488},
+    "Zfp521":{p90:6, median:2, det:0.5012},
+    "Zfp536":{p90:8, median:2, det:0.4491},
+    "Zfpm2":{p90:9, median:2, det:0.4824},
+    "Zic1":{p90:12, median:2, det:0.3310},
+    "Zic4":{p90:3, median:1, det:0.1396},
+    "Zic5":{p90:3, median:1, det:0.2049},
   };
   // log(p90+1) = CALIB.slope * log(ISH_energy+1) + CALIB.intercept, fit across
   // the 28 genes above that have both numbers (Pearson r=0.83, r^2=0.69).
@@ -355,12 +976,15 @@ input[type="number"]{
   // clearly marked as estimated rather than measured.
   var CALIB = { slope: 1.2196, intercept: 1.0724 };
 
+  // Case-insensitive symbol index (mouse symbols mix case, e.g. 2900052N01Rik).
+  var GENE_LC = {};
+  Object.keys(ABC_EXPRESSION).concat(Object.keys(MERFISH_STATS)).forEach(function(k){ GENE_LC[k.toLowerCase()] = k; });
+
   function lookupGene(sym){
     if(!sym) return null;
     var s = sym.trim();
     if(!s) return null;
-    var norm = Object.prototype.hasOwnProperty.call(MERFISH_STATS, s) || Object.prototype.hasOwnProperty.call(ABC_EXPRESSION, s)
-      ? s : (s.charAt(0).toUpperCase() + s.slice(1).toLowerCase());
+    var norm = GENE_LC[s.toLowerCase()] || s;
     if(Object.prototype.hasOwnProperty.call(MERFISH_STATS, norm)){
       var m = MERFISH_STATS[norm];
       return { source:"merfish", log: Math.log(m.p90 + 1), p90:m.p90, median:m.median, det:m.det };
@@ -391,6 +1015,7 @@ input[type="number"]{
         g._abundanceSource = "manual";
       }
     });
+    annotateGenes(genes);
   }
 
   var EXAMPLE = [
@@ -419,7 +1044,9 @@ input[type="number"]{
     };
   }
 
-  var state = { genes: [], use594: false, hasGFP: false, hasRFP: false };
+  var INITS = ["X1","X2","X3","X4","X5","X6","X7","X8","X9","X10"];
+  var FLUOR = { "488":"AF488", "546":"AF546", "594":"AF594", "647":"AF647", "750":"AF750" };
+  var state = { genes: [], use594: false, hasGFP: false, hasRFP: false, probes: [], hairpins: [] };
   var abundCells = {};
 
   function loadExample(){
@@ -434,17 +1061,27 @@ input[type="number"]{
       var raw = localStorage.getItem("hcr-panel-planner-v1");
       if(raw){
         var parsed = JSON.parse(raw);
-        if(parsed && Array.isArray(parsed.genes) && parsed.genes.length){
-          state.genes = parsed.genes;
+        if(parsed){
+          // Settings and inventory are restored whenever anything was saved, even
+          // with an empty gene list — otherwise stock entered before any gene is
+          // silently lost on reload.
           state.use594 = !!parsed.use594;
           state.hasGFP = !!parsed.hasGFP;
           state.hasRFP = !!parsed.hasRFP;
+          state.probes = Array.isArray(parsed.probes) ? parsed.probes : [];
+          state.hairpins = Array.isArray(parsed.hairpins) ? parsed.hairpins : [];
+          state.genes = Array.isArray(parsed.genes) ? parsed.genes : [];
           var maxIdNum = 0;
-          state.genes.forEach(function(g){
-            var n = parseInt(String(g.id).replace("g",""), 10);
+          state.genes.concat(state.probes, state.hairpins).forEach(function(g){
+            var n = parseInt(String(g.id).replace(/\D/g,""), 10);
             if(!isNaN(n) && n > maxIdNum) maxIdNum = n;
           });
           uid = maxIdNum + 1;
+          // The example panel is only a first-run demo: show it when nothing at
+          // all was saved, never on top of a real session.
+          if(!state.genes.length && !state.probes.length && !state.hairpins.length){
+            loadExample();
+          }
           return;
         }
       }
@@ -455,7 +1092,8 @@ input[type="number"]{
   function saveState(){
     try{
       localStorage.setItem("hcr-panel-planner-v1", JSON.stringify({
-        genes: state.genes, use594: state.use594, hasGFP: state.hasGFP, hasRFP: state.hasRFP
+        genes: state.genes, use594: state.use594, hasGFP: state.hasGFP, hasRFP: state.hasRFP,
+        probes: state.probes, hairpins: state.hairpins
       }));
     }catch(e){}
   }
@@ -480,16 +1118,121 @@ input[type="number"]{
     return {n:5,label:"very high"};
   }
 
-  function dyesForRound(roundNum, n){
-    if(n<=0) return [];
-    var strongToWeak = poolForRound(roundNum);
+  function spreadDyes(strongToWeak, n){
     var weakToStrong = strongToWeak.slice().reverse();
     var L = weakToStrong.length;
+    if(n<=0 || !L) return [];
     var count = Math.min(n, L);
     if(count === 1) return [ strongToWeak[0] ];
     var idxs = [];
     for(var i=0;i<count;i++){ idxs.push(Math.round(i*(L-1)/(count-1))); }
     return idxs.map(function(i){ return weakToStrong[i]; });
+  }
+  function dyesForRound(roundNum, n){ return spreadDyes(poolForRound(roundNum), n); }
+
+  // ---- Probe / hairpin inventory -------------------------------------------
+  // With no hairpins listed the planner is unconstrained (old behaviour). Once any
+  // hairpin is listed, every gene must be paired with an (initiator, dye) hairpin
+  // set that exists, with no initiator and no dye used twice in a round.
+  function constrained(){ return state.hairpins.length > 0; }
+  function normSym(s){ return (s||"").trim().toLowerCase(); }
+  function probeInitsFor(sym){
+    var k = normSym(sym), out = [];
+    if(!k) return out;
+    state.probes.forEach(function(p){
+      if(normSym(p.symbol) === k && p.init && out.indexOf(p.init) === -1) out.push(p.init);
+    });
+    return out;
+  }
+  function annotateGenes(genes){
+    var haveInv = state.probes.length > 0;
+    genes.forEach(function(g){
+      g._inits = probeInitsFor(g.symbol);
+      g._probeNeeded = haveInv && g._inits.length === 0 && !!(g.symbol||"").trim();
+    });
+  }
+  function ownedDyes(){
+    var o = {};
+    state.hairpins.forEach(function(h){ o[h.dye] = true; });
+    return o;
+  }
+  function optionsFor(g, roundNum){
+    var pool = poolForRound(roundNum);
+    var owned = g._inits || [];
+    var seen = {}, opts = [];
+    state.hairpins.forEach(function(h){
+      if(pool.indexOf(h.dye) === -1) return;
+      if(g.dye && h.dye !== g.dye) return;
+      if(owned.length && owned.indexOf(h.init) === -1) return;
+      var key = h.init + "|" + h.dye;
+      if(seen[key]) return;
+      seen[key] = true;
+      opts.push({ init:h.init, dye:h.dye });
+    });
+    return opts;
+  }
+  // The normal rule (abundance -> dye strength) without any inventory limits.
+  function unconstrainedAssign(roundNum, genes, poolSrc){
+    var res = {};
+    var overridden = genes.filter(function(g){ return g.dye; });
+    var auto = genes.filter(function(g){ return !g.dye; })
+      .sort(function(a,b){ return b._effectiveAbundance - a._effectiveAbundance; });
+    var used = {};
+    overridden.forEach(function(g){ used[g.dye] = true; res[g.id] = g.dye; });
+    var pool = spreadDyes(poolSrc, genes.length).filter(function(d){ return !used[d]; });
+    var pi = 0;
+    auto.forEach(function(g){
+      while(pi < pool.length && used[pool[pi]]) pi++;
+      var d = pool[pi] || null;
+      res[g.id] = d;
+      if(d){ used[d] = true; pi++; }
+    });
+    return res;
+  }
+  // Pair every gene in a round with one owned hairpin set. Branch-and-bound: first
+  // place as many genes as possible (owned-probe genes before probe-needed ones),
+  // then stay as close as possible to the normal abundance->dye rule.
+  function solveConstrained(roundNum, genes){
+    var owned = ownedDyes();
+    var poolSrc = poolForRound(roundNum).filter(function(d){ return owned[d]; });
+    var ideal = unconstrainedAssign(roundNum, genes, poolSrc);
+    var order = genes.slice().sort(function(a,b){ return b._effectiveAbundance - a._effectiveAbundance; });
+    function rank(d){ return STRENGTH_DESC.indexOf(d); }
+    var opts = order.map(function(g){
+      var o = optionsFor(g, roundNum);
+      var id = ideal[g.id], ir = id ? rank(id) : null;
+      o.forEach(function(x){ x.cost = ir === null ? 0 : Math.pow(rank(x.dye) - ir, 2); });
+      o.sort(function(a,b){ return a.cost - b.cost; });
+      return o;
+    });
+    var skipCost = order.map(function(g){ return g._probeNeeded ? 500 : 1000; });
+    var best = { cost:Infinity, pick:null }, cur = new Array(order.length), nodes = 0;
+    function dfs(i, cost, uI, uD){
+      if(cost >= best.cost || nodes++ > 300000) return;
+      if(i === order.length){ best = { cost:cost, pick:cur.slice() }; return; }
+      var os = opts[i];
+      for(var k=0;k<os.length;k++){
+        var o = os[k];
+        if(uI[o.init] || uD[o.dye]) continue;
+        uI[o.init] = true; uD[o.dye] = true; cur[i] = o;
+        dfs(i+1, cost + o.cost, uI, uD);
+        uI[o.init] = false; uD[o.dye] = false;
+      }
+      cur[i] = null;
+      dfs(i+1, cost + skipCost[i], uI, uD);
+    }
+    dfs(0, 0, {}, {});
+    order.forEach(function(g, i){
+      var o = best.pick ? best.pick[i] : null;
+      g._dye = o ? o.dye : null;
+      g._init = o ? o.init : null;
+      g._unplaced = !o;
+    });
+  }
+  function roundFits(roundNum, genes){
+    if(!constrained()) return genes.length <= (poolForRound(roundNum).length || 1);
+    solveConstrained(roundNum, genes);
+    return genes.every(function(g){ return !g._unplaced; });
   }
 
   function groupByRound(genes){
@@ -506,18 +1249,31 @@ input[type="number"]{
     Object.keys(map).forEach(function(r){
       var roundNum = Number(r);
       var genes = map[r];
-      var overridden = genes.filter(function(g){ return g.dye; });
-      var auto = genes.filter(function(g){ return !g.dye; })
-        .sort(function(a,b){ return b._effectiveAbundance - a._effectiveAbundance; });
-      var used = {};
-      overridden.forEach(function(g){ used[g.dye] = true; g._dye = g.dye; });
-      var pool = dyesForRound(roundNum, genes.length).filter(function(d){ return !used[d]; });
-      var pi = 0;
-      auto.forEach(function(g){
-        while(pi < pool.length && used[pool[pi]]) pi++;
-        g._dye = pool[pi] || null;
-        if(g._dye){ used[g._dye] = true; pi++; }
-      });
+      genes.forEach(function(g){ g._init = null; g._unplaced = false; });
+      if(constrained()){
+        solveConstrained(roundNum, genes);
+      }else{
+        var res = unconstrainedAssign(roundNum, genes, poolForRound(roundNum));
+        genes.forEach(function(g){ g._dye = res[g.id] || null; });
+      }
+    });
+  }
+
+  function constrainedWarnings(roundNum, genes, warnings){
+    genes.forEach(function(g){
+      var name = g.symbol || "(unnamed)";
+      if(g._unplaced){
+        var hp = state.hairpins.filter(function(h){ return !g._inits.length || g._inits.indexOf(h.init) !== -1; });
+        if(!hp.length){
+          warnings.push({level:"danger", text:"Round " + roundNum + ": " + name + " has a probe on " + g._inits.join("/") + ", but you have no " + g._inits.join("/") + " hairpin in stock."});
+        }else if(!optionsFor(g, roundNum).length){
+          warnings.push({level:"danger", text:"Round " + roundNum + ": " + name + " can't be placed — its " + (g._inits.length ? g._inits.join("/") + " " : "") + "hairpins are only in channels that are off or blocked this round" + (g.dye ? ", or clash with its pinned dye (" + g.dye + " nm)" : "") + "."});
+        }else{
+          warnings.push({level:"danger", text:"Round " + roundNum + ": " + name + " can't share this round — its initiator/dye options are already used by other targets (one gene per initiator and per dye per round). Try Auto-arrange."});
+        }
+      }else if(g._probeNeeded && g._init){
+        warnings.push({level:"warn", text:"Round " + roundNum + ": " + name + " has no probe in your inventory — suggested " + g._init + " · " + g._dye + " nm. Order a probe on " + g._init + " to run it this way."});
+      }
     });
   }
 
@@ -540,6 +1296,7 @@ input[type="number"]{
           warnings.push({level:"danger", text:"Round " + r + ": " + g.symbol + " is manually pinned to " + g.dye + " nm, but " + reason + " right now."});
         }
       });
+      if(constrained()) constrainedWarnings(roundNum, genes, warnings);
       var seenDye = {};
       genes.forEach(function(g){
         if(!g._dye) return;
@@ -568,6 +1325,10 @@ input[type="number"]{
         }
       });
     });
+
+    if(constrained() && !state.use594 && state.hairpins.some(function(h){ return h.dye === "594"; })){
+      warnings.push({level:"warn", text:"Your 594 hairpins are being ignored because the 594 nm channel is switched off above."});
+    }
 
     // Multi-round degradation check: later rounds see more handling (strip/reprobe
     // cycles) and should carry the more robust transcripts, so average abundance
@@ -675,6 +1436,18 @@ input[type="number"]{
       renderAbundanceCellContent(g, abundCell);
       tr.appendChild(el("td", null, [abundCell]));
 
+      var probeCell = el("div", { class:"abund-cell" });
+      if(state.probes.length){
+        if(g._inits.length){
+          g._inits.forEach(function(i){ probeCell.appendChild(el("span", { class:"init-tag", text:i })); });
+        }else if(g.symbol && g.symbol.trim()){
+          probeCell.appendChild(el("span", { class:"init-tag need", text:"needed", title:"No probe for this gene in your inventory" }));
+        }
+      }else{
+        probeCell.appendChild(el("span", { class:"abund-src", text:"\u2014" }));
+      }
+      tr.appendChild(el("td", null, [probeCell]));
+
       var roundInput = el("input", { type:"number", id:"round-"+g.id, min:"1", max:"20" });
       roundInput.value = g.round;
       roundInput.addEventListener("input", function(){
@@ -756,7 +1529,9 @@ input[type="number"]{
           el("div", { class:"meta" }, [
             el("span", { class:"g", text:g.symbol || "(unnamed)" }),
             el("span", { class:"k", text:g.klass || "—" }),
-            el("span", { class:"wl", text:g._dye ? DYE_LABEL[g._dye] : "unassigned" })
+            el("span", { class:"wl", text:g._dye ? ((g._init ? g._init + " \u00b7 " : "") + DYE_LABEL[g._dye]) : "unassigned" }),
+            (g._probeNeeded && g._init) ? el("span", { class:"flag", text:"probe needed" })
+              : (g._unplaced ? el("span", { class:"flag", text:"no valid hairpin" }) : null)
           ])
         ]);
         row.appendChild(chip);
@@ -794,13 +1569,37 @@ input[type="number"]{
   function arrangeRoundsWeakestFirst(){
     computeAutoScores(state.genes);
     var weakestFirst = state.genes.slice().sort(function(a,b){ return a._effectiveAbundance - b._effectiveAbundance; });
-    var idx = 0, round = 1;
-    while(idx < weakestFirst.length){
-      var cap = poolForRound(round).length || 1;
-      weakestFirst.slice(idx, idx + cap).forEach(function(g){ g.round = round; });
-      idx += cap;
-      round++;
+    if(!constrained()){
+      var idx = 0, round = 1;
+      while(idx < weakestFirst.length){
+        var cap = poolForRound(round).length || 1;
+        weakestFirst.slice(idx, idx + cap).forEach(function(g){ g.round = round; });
+        idx += cap;
+        round++;
+      }
+      return;
     }
+    // Inventory-aware: fill each round weakest-first, skipping any gene that can't
+    // share it (initiator/dye clash) so it is retried in the next round.
+    var orphans = [];
+    var remaining = weakestFirst.filter(function(g){
+      var ok = roundFits(1, [g]) || roundFits(2, [g]);
+      if(!ok) orphans.push(g);
+      return ok;
+    });
+    var rnd = 1, last = 1, guard = 0;
+    while(remaining.length && guard++ < 200){
+      var cur = [], rest = [];
+      remaining.forEach(function(g){
+        var trial = cur.concat([g]);
+        if(roundFits(rnd, trial)) cur = trial; else rest.push(g);
+      });
+      cur.forEach(function(g){ g.round = rnd; });
+      if(cur.length) last = rnd;
+      remaining = rest;
+      rnd++;
+    }
+    orphans.forEach(function(g){ g.round = last; });
   }
 
   document.getElementById("pasteListBtn").addEventListener("click", function(){
@@ -847,10 +1646,10 @@ input[type="number"]{
     computeAutoScores(state.genes);
     var map = groupByRound(state.genes);
     assignDyes(map);
-    var lines = ["Round\tDye (nm)\tGene\tCell class\tAbundance (1-10)\tSource"];
+    var lines = ["Round\tDye (nm)\tGene\tCell class\tAbundance (1-10)\tSource\tInitiator\tProbe"];
     Object.keys(map).map(Number).sort(function(a,b){return a-b;}).forEach(function(r){
       map[r].slice().sort(function(a,b){ return WL.indexOf(a._dye) - WL.indexOf(b._dye); }).forEach(function(g){
-        lines.push([r, g._dye||"—", g.symbol, g.klass, g._effectiveAbundance, g._abundanceSource].join("\t"));
+        lines.push([r, g._dye||"\u2014", g.symbol, g.klass, g._effectiveAbundance, g._abundanceSource, g._init||"\u2014", state.probes.length ? (g._probeNeeded ? "needed" : "have") : "\u2014"].join("\t"));
       });
     });
     var text = lines.join("\n");
@@ -873,6 +1672,506 @@ input[type="number"]{
     state.hasRFP = e.target.checked; saveState(); renderPlan();
   });
 
+  // ---- CSV helpers --------------------------------------------------------------
+  // Files are plain CSV so they open in Excel and can be typed up by hand.
+  // Every file is one table with a leading "type" column:
+  //   setting,<key>,<yes|no>
+  //   gene,<symbol>,,<cell class>,<abundance>,<manual?>,<round>,<dye>
+  //   probe,<gene>,<initiator>
+  //   hairpin,<initiator>,<fluorophore>
+  var PANEL_COLS = ["type","name","value","cell_class","abundance","manual_abundance","round","dye"];
+  var STOCK_COLS = ["type","name","value"];
+  function csvCell(v){
+    var s = (v === null || v === undefined) ? "" : String(v);
+    return /[",\n\r]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }
+  function toCsv(rows){
+    return rows.map(function(r){ return r.map(csvCell).join(","); }).join("\r\n") + "\r\n";
+  }
+  function parseCsv(text){
+    var s = String(text).replace(/^﻿/, "");
+    var rows = [], row = [], cell = "", q = false, i = 0;
+    while(i < s.length){
+      var c = s.charAt(i);
+      if(q){
+        if(c === '"'){
+          if(s.charAt(i+1) === '"'){ cell += '"'; i += 2; continue; }
+          q = false; i++; continue;
+        }
+        cell += c; i++; continue;
+      }
+      if(c === '"'){ q = true; i++; continue; }
+      if(c === ","){ row.push(cell); cell = ""; i++; continue; }
+      if(c === "\r"){ i++; continue; }
+      if(c === "\n"){ row.push(cell); rows.push(row); row = []; cell = ""; i++; continue; }
+      cell += c; i++;
+    }
+    row.push(cell);
+    rows.push(row);
+    return rows.filter(function(r){ return r.some(function(x){ return String(x).trim() !== ""; }); });
+  }
+  // Rows -> objects keyed by the header, so a hand-edited column order still works.
+  function csvRecords(text){
+    var rows = parseCsv(text);
+    if(!rows.length) return null;
+    var head = rows[0].map(function(h){ return String(h).trim().toLowerCase().replace(/\s+/g,"_"); });
+    if(head.indexOf("type") === -1) return null;
+    return rows.slice(1).map(function(r){
+      var o = {};
+      head.forEach(function(h, i){ o[h] = (r[i] === undefined ? "" : String(r[i]).trim()); });
+      return o;
+    });
+  }
+  function yes(v){ return /^(y|yes|true|1|on)$/i.test(String(v).trim()); }
+  function dyeFromText(v){
+    var m = String(v).match(/(488|546|594|647|750)/);
+    return m ? m[1] : null;
+  }
+  function initFromText(v){
+    var m = String(v).trim().match(/^X\s*(\d{1,2})$/i);
+    if(!m) return null;
+    var n = parseInt(m[1], 10);
+    return (n >= 1 && n <= 10) ? "X" + n : null;
+  }
+  function download(name, text, mime){
+    var blob = new Blob(["﻿" + text], { type: mime + ";charset=utf-8" });
+    var url = URL.createObjectURL(blob);
+    var a = document.createElement("a");
+    a.href = url;
+    a.download = name;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+  }
+  function today(){ return new Date().toISOString().slice(0,10); }
+
+  // ---- Export / import ----------------------------------------------------------
+  var importBackup = null;
+  function showFileMsg(text){
+    var n = document.getElementById("fileMsg");
+    n.textContent = text || "";
+    n.hidden = !text;
+    document.getElementById("undoImportBtn").hidden = true;
+  }
+  function exportPanel(){
+    if(!state.genes.length && !state.probes.length && !state.hairpins.length){
+      showFileMsg("Nothing to export yet — add some genes first.");
+      return;
+    }
+    var rows = [ PANEL_COLS.slice() ];
+    rows.push(["setting","use594", state.use594 ? "yes" : "no","","","","",""]);
+    rows.push(["setting","hasGFP", state.hasGFP ? "yes" : "no","","","","",""]);
+    rows.push(["setting","hasRFP", state.hasRFP ? "yes" : "no","","","","",""]);
+    state.genes.forEach(function(g){
+      rows.push(["gene", g.symbol, "", g.klass, g.abundance,
+                 g.manualOverride ? "yes" : "no", g.round, g.dye || ""]);
+    });
+    state.probes.forEach(function(p){ rows.push(["probe", p.symbol, p.init, "","","","",""]); });
+    state.hairpins.forEach(function(h){ rows.push(["hairpin", h.init, FLUOR[h.dye], "","","","",""]); });
+    download("hcr-panel-" + today() + ".csv", toCsv(rows), "text/csv");
+    showFileMsg("Exported " + state.genes.length + " gene" + (state.genes.length===1?"":"s") + ", " +
+      state.probes.length + " probe" + (state.probes.length===1?"":"s") + ", " +
+      state.hairpins.length + " hairpin" + (state.hairpins.length===1?"":"s") + ".");
+  }
+  // Reads the CSV above, and still reads the older .json exports.
+  function parsePanel(text){
+    var s = String(text).replace(/^﻿/, "").trim();
+    if(s.charAt(0) === "{") return parsePanelJson(s);
+    var recs = csvRecords(s);
+    if(!recs) return { ok:false, error:"That doesn't look like a panel file — the first row should start with a “type” column." };
+    var genes = [], probes = [], hairpins = [], set = {}, hasGene = false, hasStock = false;
+    recs.forEach(function(r){
+      var kind = (r.type || "").toLowerCase();
+      if(kind === "gene"){
+        hasGene = true;
+        var a = Number(r.abundance), rd = parseInt(r.round, 10);
+        genes.push({
+          symbol: r.name || "", klass: r.cell_class || "",
+          abundance: (a >= 1 && a <= 10) ? a : 5,
+          manualOverride: yes(r.manual_abundance),
+          round: (rd >= 1 && rd <= 20) ? rd : 1,
+          dye: dyeFromText(r.dye)
+        });
+      }else if(kind === "probe"){
+        var pi = initFromText(r.value);
+        if(pi){ probes.push({ symbol: r.name || "", init: pi }); hasStock = true; }
+      }else if(kind === "hairpin"){
+        var hi = initFromText(r.name), hd = dyeFromText(r.value);
+        if(hi && hd){ hairpins.push({ init: hi, dye: hd }); hasStock = true; }
+      }else if(kind === "setting"){
+        set[String(r.name).toLowerCase()] = yes(r.value);
+      }
+    });
+    if(!hasGene){
+      return { ok:false, error: hasStock
+        ? "That's a stock list — load it with “Load stock” in the Probes & hairpins section above."
+        : "No gene rows found in that file." };
+    }
+    return { ok:true, data:{ genes:genes, probes:probes, hairpins:hairpins,
+      use594:!!set.use594, hasGFP:!!set.hasgfp, hasRFP:!!set.hasrfp } };
+  }
+  function parsePanelJson(text){
+    var obj;
+    try{ obj = JSON.parse(text); }catch(e){ return { ok:false, error:"That file isn't valid CSV or JSON." }; }
+    if(!obj || obj.app !== "HCR Panel Planner"){
+      return { ok:false, error:"That doesn't look like an HCR Panel Planner export." };
+    }
+    if(!Array.isArray(obj.genes)){
+      return { ok:false, error: (obj.kind === "stock" || Array.isArray(obj.hairpins))
+        ? "That's a stock list — load it with “Load stock” in the Probes & hairpins section above."
+        : "That file has no gene list in it." };
+    }
+    function str(v){ return typeof v === "string" ? v : ""; }
+    var genes = obj.genes.map(function(g){
+      var r = parseInt(g && g.round, 10), a = Number(g && g.abundance);
+      return {
+        symbol: str(g && g.symbol), klass: str(g && g.klass),
+        abundance: (a >= 1 && a <= 10) ? a : 5,
+        manualOverride: !!(g && g.manualOverride),
+        round: (r >= 1 && r <= 20) ? r : 1,
+        dye: (g && WL.indexOf(String(g.dye)) !== -1) ? String(g.dye) : null
+      };
+    });
+    var probes = (Array.isArray(obj.probes) ? obj.probes : []).filter(function(p){
+      return p && INITS.indexOf(p.init) !== -1;
+    }).map(function(p){ return { symbol:str(p.symbol), init:p.init }; });
+    var hairpins = (Array.isArray(obj.hairpins) ? obj.hairpins : []).filter(function(h){
+      return h && INITS.indexOf(h.init) !== -1 && WL.indexOf(String(h.dye)) !== -1;
+    }).map(function(h){ return { init:h.init, dye:String(h.dye) }; });
+    var s = obj.settings || {};
+    return { ok:true, data:{ genes:genes, probes:probes, hairpins:hairpins,
+      use594:!!s.use594, hasGFP:!!s.hasGFP, hasRFP:!!s.hasRFP } };
+  }
+  function applyPanel(d, filename){
+    importBackup = JSON.parse(JSON.stringify({
+      genes:state.genes, probes:state.probes, hairpins:state.hairpins,
+      use594:state.use594, hasGFP:state.hasGFP, hasRFP:state.hasRFP }));
+    state.genes = d.genes.map(function(g){ g.id = nextId(); g.round = g.round || 1; return g; });
+    state.probes = d.probes.map(function(p){ p.id = "i" + (uid++); return p; });
+    state.hairpins = d.hairpins.map(function(h){ h.id = "i" + (uid++); return h; });
+    state.use594 = d.use594; state.hasGFP = d.hasGFP; state.hasRFP = d.hasRFP;
+    syncSettingsUI(); saveState(); renderInventory(); renderAll();
+    showFileMsg("Loaded " + d.genes.length + " gene" + (d.genes.length===1?"":"s") + ", " + d.probes.length + " probe" + (d.probes.length===1?"":"s") + " and " + d.hairpins.length + " hairpin" + (d.hairpins.length===1?"":"s") + " from " + filename + ". Your previous panel was replaced.");
+    document.getElementById("undoImportBtn").hidden = false;
+  }
+  document.getElementById("exportBtn").addEventListener("click", exportPanel);
+  document.getElementById("importBtn").addEventListener("click", function(){
+    document.getElementById("importFile").click();
+  });
+  document.getElementById("importFile").addEventListener("change", function(e){
+    var input = e.target, f = input.files && input.files[0];
+    if(!f) return;
+    var fr = new FileReader();
+    fr.onload = function(){
+      var r = parsePanel(String(fr.result));
+      if(r.ok) applyPanel(r.data, f.name); else showFileMsg(r.error);
+    };
+    fr.onerror = function(){ showFileMsg("Couldn't read that file."); };
+    fr.readAsText(f);
+    input.value = "";
+  });
+  document.getElementById("undoImportBtn").addEventListener("click", function(){
+    if(!importBackup) return;
+    state.genes = importBackup.genes; state.probes = importBackup.probes; state.hairpins = importBackup.hairpins;
+    state.use594 = importBackup.use594; state.hasGFP = importBackup.hasGFP; state.hasRFP = importBackup.hasRFP;
+    importBackup = null;
+    syncSettingsUI(); saveState(); renderInventory(); renderAll();
+    showFileMsg("Import undone — your previous panel is back.");
+    document.getElementById("undoImportBtn").hidden = true;
+  });
+
+  // ---- Inventory UI -----------------------------------------------------------
+  function ensureGene(symbol){
+    var k = normSym(symbol);
+    if(!k) return false;
+    var exists = state.genes.some(function(g){ return normSym(g.symbol) === k; });
+    if(exists) return false;
+    var maxRound = state.genes.reduce(function(m,g){ return Math.max(m, g.round||1); }, 1);
+    state.genes.push(freshGene({ symbol:symbol.trim(), klass:"", abundance:5 }, maxRound));
+    return true;
+  }
+  function selectOf(values, labelFn, current){
+    var s = document.createElement("select");
+    values.forEach(function(v){ s.appendChild(el("option", { value:v, text:labelFn(v) })); });
+    s.value = current;
+    return s;
+  }
+  function removeBtn(fn){
+    var b = el("button", { class:"row-remove", type:"button", title:"Remove", text:"\u00d7" });
+    b.addEventListener("click", fn);
+    return b;
+  }
+  function renderInventory(){
+    var pr = document.getElementById("probeInvRows");
+    pr.innerHTML = "";
+    if(!state.probes.length) pr.appendChild(el("p", { class:"empty-plan", text:"NO PROBES LISTED" }));
+    state.probes.forEach(function(p){
+      var sym = el("input", { type:"text", placeholder:"Gene symbol" });
+      sym.value = p.symbol;
+      sym.addEventListener("input", function(){ p.symbol = sym.value; saveState(); });
+      sym.addEventListener("change", function(){ ensureGene(p.symbol); saveState(); renderAll(); });
+      var init = selectOf(INITS, function(v){ return v; }, p.init || "X1");
+      init.addEventListener("change", function(){ p.init = init.value; saveState(); renderAll(); });
+      var row = el("div", { class:"inv-row" }, [ sym, init, removeBtn(function(){
+        state.probes = state.probes.filter(function(x){ return x.id !== p.id; });
+        saveState(); renderInventory(); renderAll();
+      }) ]);
+      pr.appendChild(row);
+    });
+
+    var hr = document.getElementById("hairpinInvRows");
+    hr.innerHTML = "";
+    if(!state.hairpins.length) hr.appendChild(el("p", { class:"empty-plan", text:"NO HAIRPINS LISTED \u2014 PLANNING WITHOUT LIMITS" }));
+    state.hairpins.forEach(function(h){
+      var init = selectOf(INITS, function(v){ return v; }, h.init || "X1");
+      init.addEventListener("change", function(){ h.init = init.value; saveState(); renderAll(); });
+      var dye = selectOf(WL, function(v){ return FLUOR[v] + " (" + v + " nm)"; }, h.dye || "488");
+      dye.addEventListener("change", function(){ h.dye = dye.value; saveState(); renderAll(); });
+      var row = el("div", { class:"inv-row" }, [ init, el("span", { class:"arrow", text:"+" }), dye, removeBtn(function(){
+        state.hairpins = state.hairpins.filter(function(x){ return x.id !== h.id; });
+        saveState(); renderInventory(); renderAll();
+      }) ]);
+      hr.appendChild(row);
+    });
+  }
+
+  // "Sst X2", "Pvalb-X3", one per line or comma/semicolon separated.
+  function parseProbeList(raw){
+    var items = [], bad = [];
+    raw.split(/[\n;,]+/).forEach(function(line){
+      var s = line.trim();
+      if(!s) return;
+      var m = s.match(/^(.+?)[\s:\-_\/]+X\s*(\d{1,2})$/i);
+      var n = m ? parseInt(m[2], 10) : 0;
+      if(m && n >= 1 && n <= 10) items.push({ symbol:m[1].trim(), init:"X" + n });
+      else bad.push(s);
+    });
+    return { items:items, bad:bad };
+  }
+  // "X2 AF546, X2 AF647", "X3: AF488 AF750", "X3 488 X3 750".
+  function parseHairpinList(raw){
+    var items = [], cur = null, m;
+    var re = /(X\s*(\d{1,2}))|(?:(?:AF|Alexa\s*Fluor)\s*)?(488|546|594|647|750)/gi;
+    while((m = re.exec(raw))){
+      if(m[2]){ var n = parseInt(m[2], 10); cur = (n >= 1 && n <= 10) ? "X" + n : null; }
+      else if(m[3] && cur){ items.push({ init:cur, dye:m[3] }); }
+    }
+    return items;
+  }
+  function addProbeEntry(symbol, init){
+    var k = normSym(symbol);
+    var dup = state.probes.some(function(p){ return normSym(p.symbol) === k && p.init === init; });
+    if(!dup) state.probes.push({ id:"i" + (uid++), symbol:symbol, init:init });
+  }
+  function addHairpinEntry(init, dye){
+    var dup = state.hairpins.some(function(h){ return h.init === init && h.dye === dye; });
+    if(!dup) state.hairpins.push({ id:"i" + (uid++), init:init, dye:dye });
+  }
+  function showMsg(id, text){
+    var n = document.getElementById(id);
+    n.textContent = text || "";
+    n.hidden = !text;
+  }
+
+  document.getElementById("addProbeInvBtn").addEventListener("click", function(){
+    state.probes.push({ id:"i" + (uid++), symbol:"", init:"X1" });
+    saveState(); renderInventory();
+    var inputs = document.querySelectorAll("#probeInvRows input[type=text]");
+    if(inputs.length) inputs[inputs.length - 1].focus();
+  });
+  document.getElementById("addHairpinInvBtn").addEventListener("click", function(){
+    state.hairpins.push({ id:"i" + (uid++), init:"X1", dye:"488" });
+    saveState(); renderInventory(); renderAll();
+  });
+  document.getElementById("pasteProbeInvBtn").addEventListener("click", function(){
+    document.getElementById("probeInvPasteBox").hidden = false;
+    document.getElementById("probeInvPasteArea").focus();
+  });
+  document.getElementById("pasteHairpinInvBtn").addEventListener("click", function(){
+    document.getElementById("hairpinInvPasteBox").hidden = false;
+    document.getElementById("hairpinInvPasteArea").focus();
+  });
+  document.getElementById("probeInvPasteCancel").addEventListener("click", function(){
+    document.getElementById("probeInvPasteArea").value = "";
+    showMsg("probeInvMsg", "");
+    document.getElementById("probeInvPasteBox").hidden = true;
+  });
+  document.getElementById("hairpinInvPasteCancel").addEventListener("click", function(){
+    document.getElementById("hairpinInvPasteArea").value = "";
+    showMsg("hairpinInvMsg", "");
+    document.getElementById("hairpinInvPasteBox").hidden = true;
+  });
+  document.getElementById("probeInvPasteAdd").addEventListener("click", function(){
+    var area = document.getElementById("probeInvPasteArea");
+    var parsed = parseProbeList(area.value);
+    parsed.items.forEach(function(it){ addProbeEntry(it.symbol, it.init); ensureGene(it.symbol); });
+    if(parsed.items.length) arrangeRoundsWeakestFirst();
+    saveState(); renderInventory(); renderAll();
+    if(parsed.bad.length){
+      area.value = parsed.bad.join("\n");
+      showMsg("probeInvMsg", "Couldn't read these lines (need a gene, a space or dash, then X1\u2013X10): left in the box.");
+    }else{
+      area.value = "";
+      showMsg("probeInvMsg", "");
+      document.getElementById("probeInvPasteBox").hidden = true;
+    }
+  });
+  document.getElementById("hairpinInvPasteAdd").addEventListener("click", function(){
+    var area = document.getElementById("hairpinInvPasteArea");
+    var items = parseHairpinList(area.value);
+    if(!items.length){
+      showMsg("hairpinInvMsg", "No initiator + fluorophore pairs found. Try: X2 AF546, X2 AF647");
+      return;
+    }
+    items.forEach(function(it){ addHairpinEntry(it.init, it.dye); });
+    arrangeRoundsWeakestFirst();
+    saveState(); renderInventory(); renderAll();
+    area.value = "";
+    showMsg("hairpinInvMsg", "");
+    document.getElementById("hairpinInvPasteBox").hidden = true;
+  });
+  // ---- Stock export / load -----------------------------------------------------
+  function setSendMsg(text, bad){
+    var m = document.getElementById("sendMsg");
+    m.textContent = text;
+    if(bad) m.classList.add("bad"); else m.classList.remove("bad");
+  }
+  document.getElementById("exportStockBtn").addEventListener("click", function(){
+    if(!state.probes.length && !state.hairpins.length){
+      setSendMsg("Nothing in stock to export yet.", true);
+      return;
+    }
+    var rows = [ STOCK_COLS.slice() ];
+    state.probes.forEach(function(p){ rows.push(["probe", p.symbol, p.init]); });
+    state.hairpins.forEach(function(h){ rows.push(["hairpin", h.init, FLUOR[h.dye]]); });
+    download("hcr-stock-" + today() + ".csv", toCsv(rows), "text/csv");
+    setSendMsg("Exported " + state.probes.length + " probe" + (state.probes.length===1?"":"s") +
+      " and " + state.hairpins.length + " hairpin" + (state.hairpins.length===1?"":"s") + ".", false);
+  });
+  // Accepts a stock CSV, a full panel CSV (taking just its stock), or the older .json files.
+  function parseStock(text){
+    var s = String(text).replace(/^﻿/, "").trim();
+    var probes = [], hairpins = [];
+    if(s.charAt(0) === "{"){
+      var obj;
+      try{ obj = JSON.parse(s); }catch(e){ return { ok:false, error:"That file isn't valid CSV or JSON." }; }
+      if(!obj || obj.app !== "HCR Panel Planner"){
+        return { ok:false, error:"That doesn't look like an HCR Panel Planner file." };
+      }
+      probes = (Array.isArray(obj.probes) ? obj.probes : []).filter(function(p){
+        return p && INITS.indexOf(p.init) !== -1;
+      }).map(function(p){ return { symbol: typeof p.symbol === "string" ? p.symbol : "", init:p.init }; });
+      hairpins = (Array.isArray(obj.hairpins) ? obj.hairpins : []).filter(function(h){
+        return h && INITS.indexOf(h.init) !== -1 && WL.indexOf(String(h.dye)) !== -1;
+      }).map(function(h){ return { init:h.init, dye:String(h.dye) }; });
+    }else{
+      var recs = csvRecords(s);
+      if(!recs) return { ok:false, error:"That doesn't look like a stock list — the first row should read: type,name,value" };
+      recs.forEach(function(r){
+        var kind = (r.type || "").toLowerCase();
+        if(kind === "probe"){
+          var pi = initFromText(r.value);
+          if(pi) probes.push({ symbol: r.name || "", init: pi });
+        }else if(kind === "hairpin"){
+          var hi = initFromText(r.name), hd = dyeFromText(r.value);
+          if(hi && hd) hairpins.push({ init: hi, dye: hd });
+        }
+      });
+    }
+    if(!probes.length && !hairpins.length){
+      return { ok:false, error:"No usable probe or hairpin rows found — check the initiators read X1–X10 and the fluorophores name a channel." };
+    }
+    return { ok:true, probes:probes, hairpins:hairpins };
+  }
+  document.getElementById("loadStockBtn").addEventListener("click", function(){
+    document.getElementById("stockFile").click();
+  });
+  document.getElementById("stockFile").addEventListener("change", function(e){
+    var input = e.target, f = input.files && input.files[0];
+    if(!f) return;
+    var fr = new FileReader();
+    fr.onload = function(){
+      var r = parseStock(String(fr.result));
+      if(!r.ok){ setSendMsg(r.error, true); return; }
+      state.probes = r.probes.map(function(p){ p.id = "i" + (uid++); return p; });
+      state.hairpins = r.hairpins.map(function(h){ h.id = "i" + (uid++); return h; });
+      saveState(); renderInventory(); renderAll();
+      setSendMsg("Loaded " + r.probes.length + " probe" + (r.probes.length===1?"":"s") + " and " +
+        r.hairpins.length + " hairpin" + (r.hairpins.length===1?"":"s") + " from " + f.name +
+        ". Hit Send to planning stage to build the plan.", false);
+    };
+    fr.onerror = function(){ setSendMsg("Couldn't read that file.", true); };
+    fr.readAsText(f);
+    input.value = "";
+  });
+
+  // ---- Hand-off to the planning stage ------------------------------------------
+  // Rebuilds the probe list from the stock: the genes below are exactly the genes
+  // you hold probes for, nothing else. A gene already in the list keeps its cell
+  // class, pinned dye and any manual abundance; rounds are re-solved from scratch.
+  var sendBackup = null;
+  document.getElementById("sendToPlanBtn").addEventListener("click", function(){
+    if(!state.probes.length){
+      setSendMsg("No probes listed — add at least one above, since the probe list is built from them.", true);
+      return;
+    }
+    var blanks = state.probes.filter(function(p){ return !normSym(p.symbol); }).length;
+    var prev = {};
+    state.genes.forEach(function(g){ prev[normSym(g.symbol)] = g; });
+    var seen = {}, fresh = [], kept = 0;
+    state.probes.forEach(function(p){
+      var k = normSym(p.symbol);
+      if(!k || seen[k]) return;
+      seen[k] = true;
+      if(prev[k]){ kept++; fresh.push(prev[k]); }
+      else fresh.push(freshGene({ symbol:p.symbol.trim(), klass:"", abundance:5 }, 1));
+    });
+    if(!fresh.length){
+      setSendMsg("Every probe row is blank — type a gene symbol in at least one.", true);
+      return;
+    }
+    var dropped = state.genes.filter(function(g){ return !seen[normSym(g.symbol)]; }).length;
+    sendBackup = state.genes;
+    state.genes = fresh;
+    arrangeRoundsWeakestFirst();
+    saveState(); renderInventory(); renderAll();
+
+    var rounds = {};
+    state.genes.forEach(function(g){ rounds[g.round || 1] = true; });
+    var nR = Object.keys(rounds).length;
+    var stuck = state.genes.filter(function(g){ return g._unplaced; }).length;
+    var parts = [ "Planned " + fresh.length + " gene" + (fresh.length===1?"":"s") +
+                  " across " + nR + " round" + (nR===1?"":"s") ];
+    if(dropped) parts.push(dropped + " gene" + (dropped===1?"":"s") + " not in stock removed");
+    if(kept) parts.push(kept + " kept existing details");
+    if(stuck) parts.push(stuck + " couldn't be placed — see Conflicts & notes");
+    if(blanks) parts.push(blanks + " blank probe row" + (blanks===1?"":"s") + " ignored");
+    setSendMsg(parts.join(" · ") + ".", !!stuck);
+    document.getElementById("undoSendBtn").hidden = !dropped && !kept;
+    var plan = document.getElementById("planSection");
+    if(plan && plan.scrollIntoView){
+      try{ plan.scrollIntoView({ behavior:"smooth", block:"start" }); }catch(e){}
+    }
+  });
+  document.getElementById("undoSendBtn").addEventListener("click", function(){
+    if(!sendBackup) return;
+    state.genes = sendBackup;
+    sendBackup = null;
+    saveState(); renderAll();
+    setSendMsg("Undone — the previous probe list is back.", false);
+    document.getElementById("undoSendBtn").hidden = true;
+  });
+
+  document.getElementById("clearInvBtn").addEventListener("click", function(){
+    state.probes = []; state.hairpins = [];
+    var m = document.getElementById("sendMsg");
+    m.classList.remove("bad");
+    m.textContent = "Rebuilds the probe list below from the probes above, then sets the rounds and dyes.";
+    document.getElementById("undoSendBtn").hidden = true;
+    saveState(); renderInventory(); renderAll();
+  });
+
   function syncSettingsUI(){
     document.getElementById("use594Check").checked = state.use594;
     document.getElementById("gfpCheck").checked = state.hasGFP;
@@ -882,6 +2181,7 @@ input[type="number"]{
   function start(){
     loadState();
     syncSettingsUI();
+    renderInventory();
     renderAll();
   }
 
